@@ -1,0 +1,30 @@
+[Eagle]
+Version="07 04 00"
+Platform="Linux"
+Serial="62191E841E-LSR-WLM-1EL"
+Globals="Globals"
+Desktop="Desktop"
+
+[Globals]
+AutoSaveProject=1
+UsedLibrary="/home/rostyk/programs/Eagle-7.4/lbr/74ttl-din.lbr"
+UsedLibrary="/home/rostyk/programs/Eagle-7.4/lbr/adafruit.lbr"
+UsedLibrary="/home/rostyk/programs/Eagle-7.4/lbr/moudle.lbr"
+UsedLibrary="/home/rostokus/programs/Eagle-7.4/lbr/MPU6050.lbr"
+UsedLibrary="/home/rostokus/programs/Eagle-7.4/lbr/Speicherkarten-SockelWR-CRD.lbr"
+UsedLibrary="/home/rostokus/programs/Eagle-7.4/lbr/crystal.lbr"
+UsedLibrary="/home/rostokus/programs/Eagle-7.4/lbr/linear_LM50.lbr"
+UsedLibrary="/home/rostokus/programs/Eagle-7.4/lbr/omron.lbr"
+UsedLibrary="/home/rostokus/programs/Eagle-7.4/lbr/transistor-npn.lbr"
+UsedLibrary="/home/rostokus/programs/Eagle-7.4/lbr/transistor-small-signal.lbr"
+UsedLibrary="/home/rostokus/programs/Eagle-7.4/lbr/transistor.lbr"
+
+[Win_1]
+Type="Control Panel"
+Loc="0 24 916 744"
+State=1
+Number=0
+
+[Desktop]
+Screen="1280 800"
+Window="Win_1"
