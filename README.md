@@ -1,5 +1,5 @@
-# gTrack Firmware
-This is the main source code repository of the gTrack firmware libraries.
+# Emflex Firmware
+This is the main source code repository of the Emflex firmware.
 
 ## Building
 Set building configuration parameters inside make_target file.
