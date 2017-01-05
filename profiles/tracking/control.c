@@ -57,7 +57,7 @@ runState stateArray[] = {doStateIdle, doStateActive, doStateAlarm, doStateTest};
 ctrl_sm_state_t doStateIdle(ctrl_sm_event_t ev)
 {
   ctrl_sm_state_t st = IDLE_STATE;
-  //dof_t dof;
+  dof_t dof;
 
   switch (ev)
   {
@@ -69,12 +69,12 @@ ctrl_sm_state_t doStateIdle(ctrl_sm_event_t ev)
       LOG_TRACE(CONTROL_CMP, "ACTIVE state!\r\n");
 
       /* enable collection of statistics from gyro and accel */
-      //imuSumAngleGet(&dof);
+      imuSumAngleGet(&dof);
 
-      //LOG_TRACE(CONTROL_CMP, "x=%f y=%f", dof.x, dof.y);
+      LOG_TRACE(CONTROL_CMP, "x=%f y=%f", dof.x, dof.y);
 
-      //imuThresholdSet(dof, 0.5);
-      //imuEnable();
+      imuThresholdSet(dof, 0.5);
+      imuEnable();
 
       if (RV_SUCCESS != gsmSmsSend("ARM\r\n"))
       {

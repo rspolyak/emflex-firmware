@@ -394,7 +394,7 @@ RV_t accelGyroInit(void)
   {
     /* Check WHO_AM_I register */
     rv = accelGyroRead(MPU6050_ADDRESS, MPU6050_RA_WHO_AM_I, rcvBuf, &err);
-    if (!(rv == MSG_OK) && (rcvBuf[0] == MPU6050_ADDRESS))
+    if ((rv != MSG_OK) && (rcvBuf[0] == MPU6050_ADDRESS))
     {
       LOG_TRACE(GYRO_CMP, "WHO_AM_I=error = %d", err);
       break;
