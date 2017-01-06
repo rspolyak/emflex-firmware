@@ -10,7 +10,7 @@ Home automation, Security, IoT, etc.
 To ease debugging, Emflex provides CLI and logging components.
 
 ## Prerequisite
-- Clone or fetch the code repository with all git submodules
+* Clone or fetch the code repository with all git submodules
   To clone the code repository recursively (git 1.9+)
 
         git clone --recursive https://github.com/emflex/emflex-firmware.git
@@ -19,7 +19,7 @@ To ease debugging, Emflex provides CLI and logging components.
 
         git submodule update --init --recursive
 
- - Install ARM cross compiler toolchain
+* Install ARM cross compiler toolchain
 
 ## Building
 Set building configuration parameters inside make_target file.
