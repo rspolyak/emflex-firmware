@@ -24,7 +24,7 @@
 #ifndef MPU_DEF
 #define MPU_DEF
 
-#define MPU6050_ADDRESS         0x69
+#define MPU6050_ADDRESS         0x68
 
 #define MPU6050_RA_XG_OFFS_TC 0x00 //[7] PWR_MODE, [6:1] XG_OFFS_TC, [0] OTP_BNK_VLD
 #define MPU6050_RA_YG_OFFS_TC 0x01 //[7] PWR_MODE, [6:1] YG_OFFS_TC, [0] OTP_BNK_VLD

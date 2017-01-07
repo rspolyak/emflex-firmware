@@ -30,6 +30,7 @@
 #include "control_api.h"
 #include "cli.h"
 #include "data_eeprom.h"
+#include "accelGyro.h"
 
 uint32_t logTimeStampGet(void)
 {
@@ -105,7 +106,8 @@ void profileInit(void)
 {
   cnfgrRegister("Logging", loggingAppInit);
   cnfgrRegister("Control", ctrlAppInit);
-  cnfgrRegister("GSM", gsmInit);
+  cnfgrRegister("GSM",     gsmInit);
+  cnfgrRegister("IMU",     accelGyroInit);
 
 //  cliCmdRegister("AT", gsmCmdSend);
   cliCmdRegister("log_console",  cliEventLogsOn);
