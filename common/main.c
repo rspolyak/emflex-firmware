@@ -27,6 +27,7 @@
 #include "cnfgr_api.h"
 #include "cli.h"
 #include "serial_port.h"
+#include "logging.h"
 
 int main(void)
 {
@@ -47,6 +48,7 @@ int main(void)
   /* component initialization */
   cnfgrInit();
   cnfgrRegister("CLI", cliInit);
+  cnfgrRegister("Logging", loggingAppInit);
 
   profileInit();
 

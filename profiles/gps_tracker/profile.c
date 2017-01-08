@@ -26,15 +26,58 @@
 #include "cnfgr_api.h"
 #include "logging.h"
 #include "cli.h"
+#include "control_api.h"
+
+typedef enum
+{
+  START_EVENT = 0,
+} gps_sm_event_t;
+
+typedef enum
+{
+  IDLE_STATE = 0,
+  ACTIVE_STATE,
+} gps_sm_state_t;
+
+RV_t doStateIdle(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
+{
+  switch (ev)
+  {
+    case START_EVENT:
+      LOG_TRACE(CONTROL_CMP, "Started!\r\n");
+      *state = ACTIVE_STATE;
+      break;
+
+    default:
+      LOG_TRACE(CONTROL_CMP, "UNSUPPORTED event!\r\n");
+      break;
+  }
+
+  return RV_SUCCESS;
+}
+
+RV_t doStateActive(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
+{
+  (void)ev;
+  (void)state;
+
+  return RV_SUCCESS;
+}
 
 RV_t helloWorld(void)
 {
   LOG_TRACE(CMP, "Hello world!");
+
+  ctrlEventPost(START_EVENT);
 
   return RV_SUCCESS;
 }
 
 void profileInit()
 {
+  ctrlStateAdd(IDLE_STATE, doStateIdle, "IDLE");
+  ctrlStateAdd(ACTIVE_STATE, doStateActive, "ACTIVE");
+
   cliCmdRegister("hello", &helloWorld);
+  cnfgrRegister("Control", ctrlAppInit);
 }
