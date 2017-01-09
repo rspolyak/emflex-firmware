@@ -27,6 +27,7 @@
 #include "logging.h"
 #include "cli.h"
 #include "control_api.h"
+#include "gps.h"
 
 typedef enum
 {
@@ -79,5 +80,7 @@ void profileInit()
   ctrlStateAdd(ACTIVE_STATE, doStateActive, "ACTIVE");
 
   cliCmdRegister("hello", &helloWorld);
+
   cnfgrRegister("Control", ctrlAppInit);
+  cnfgrRegister("Gps", gpsInit);
 }

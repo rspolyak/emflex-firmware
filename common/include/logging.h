@@ -24,8 +24,6 @@
 
 #include "common.h"
 
-#define LOGGING_THREAD_STACK_SIZE 1024
-
 RV_t loggingAppInit(void);
 
 void logEvent(const char *msg, ...);

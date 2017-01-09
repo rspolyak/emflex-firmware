@@ -26,8 +26,6 @@
 
 #define CLI_SERIAL_SPEED 38400
 
-#define CLI_THREAD_STACK_SIZE 1024
-
 typedef RV_t (*cli_cb_t)(void);
 
 typedef struct cliEntry_s
