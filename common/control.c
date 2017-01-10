@@ -71,7 +71,7 @@ void changeState(ctrl_sm_event_t ev)
   LOG_TRACE(CONTROL_CMP, "New state is %s!\r\n", ctrlCurStateToStr());
 }
 
-static THD_WORKING_AREA(ctrlAppThread, 1024);
+static THD_WORKING_AREA(ctrlAppThread, CTRL_TASK_STACK_SIZE);
 
 static THD_FUNCTION(ctrlAppTask, arg)
 {

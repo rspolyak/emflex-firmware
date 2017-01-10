@@ -29,6 +29,7 @@
 #include "accelGyro.h"
 #include "utils.h"
 #include "i2c_api.h"
+#include "bsp.h"
 
 imuCbFunc_t imuCbArray_g[IMU_EVENT_LAST] = {0};
 
@@ -59,7 +60,7 @@ static bool accel_is_enabled = FALSE;
 static MUTEX_DECL(gyro_alarm_mutex);
 static CONDVAR_DECL(gyro_alarm_cond_var);
 
-static THD_WORKING_AREA(accelGyroThread, 512);
+static THD_WORKING_AREA(accelGyroThread, ACCEL_THREAD_STACK_SIZE);
 
 static RV_t imuCallEventCb(imuEvent_t event);
 
