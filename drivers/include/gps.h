@@ -42,6 +42,23 @@
 
 RV_t gpsInit(void);
 
+typedef enum
+{
+  GPS_EVENT_LAT_LONG,
+  GPS_EVENT_LAST
+} gpsEvent_t;
+
+typedef struct gpsData_s
+{
+  int latitude;
+  int longitude;
+  int scale;
+} gpsData_t;
+
+typedef RV_t (*gpsCbFunc_t)(gpsData_t*);
+
+RV_t gpsRegisterEventCb(gpsEvent_t event, gpsCbFunc_t cb);
+
 /** @} */
 
 #endif  /* _GPS_H_ */

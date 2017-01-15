@@ -69,18 +69,21 @@ RV_t helloWorld(void)
 {
   LOG_TRACE(CMP, "Hello world!");
 
-  ctrlEventPost(START_EVENT);
+  return RV_SUCCESS;
+}
 
+static RV_t gpsEventCb(gpsData_t* data)
+{
+  LOG_TRACE(GPS_CMP, "GGA latitude: %d/%d, longitude: %d/%d\r\n",
+            data->latitude, data->scale,
+            data->longitude, data->scale);
   return RV_SUCCESS;
 }
 
 void profileInit()
 {
-  ctrlStateAdd(IDLE_STATE, doStateIdle, "IDLE");
-  ctrlStateAdd(ACTIVE_STATE, doStateActive, "ACTIVE");
-
   cliCmdRegister("hello", &helloWorld);
 
-  cnfgrRegister("Control", ctrlAppInit);
+  gpsRegisterEventCb(GPS_EVENT_LAT_LONG, gpsEventCb);
   cnfgrRegister("Gps", gpsInit);
 }

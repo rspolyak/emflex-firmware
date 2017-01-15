@@ -5,7 +5,7 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-  USE_OPT = -O0 -ggdb -fomit-frame-pointer -falign-functions=16 -lm
+  USE_OPT = -O0 -ggdb -fomit-frame-pointer -falign-functions=16 -lm -Dtimegm=mktime -std=c99
 endif
 
 # C specific options here (added to USE_OPT).
@@ -111,6 +111,7 @@ CSRC += $(STARTUPSRC) \
 
 CSRC+=$(patsubst %.c, %.o, $(wildcard common/*.c))
 CSRC+=$(patsubst %.c, %.o, $(wildcard profiles/$(PROFILE)/*.c))
+CSRC+=$(patsubst %.c, %.o, $(wildcard libraries/minmea/minmea.c))
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global
 # setting.
@@ -204,7 +205,8 @@ UINCDIR = drivers/include 	\
           bsp/include		\
           common/include        \
 	  profiles/$(PROFILE)/include \
-	  bsp/$(TRG)
+	  bsp/$(TRG) \
+	  libraries/minmea
 	
 
 # List the user directory to look for the libraries here
