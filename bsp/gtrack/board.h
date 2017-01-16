@@ -50,7 +50,7 @@
 #define STM32L1XX_MD
 
 #define SYS_PWR_PORT GPIOA
-#define SYS_PWR_PIN  GPIOA_PIN3
+#define SYS_PWR_PIN  GPIOA_PIN7
 
 /*
  * IO pins assignments.
@@ -189,7 +189,7 @@
  * PA4  - PIN4                      (input pullup).
  * PA5  - PIN5                      (input pullup).
  * PA6  - PIN6                      (input pullup).
- * PA7  - PIN7                      (input pullup).
+ * PA7  - PIN7                      (output pushpull maximum).
  * PA8  - PIN8                      (input pullup).
  * PA9  - PIN9                      (input pullup).
  * PA10 - PIN10                     (input pullup).
@@ -206,7 +206,7 @@
                                      PIN_MODE_INPUT(GPIOA_PIN4) |           \
                                      PIN_MODE_INPUT(GPIOA_PIN5) |           \
                                      PIN_MODE_INPUT(GPIOA_PIN6) |           \
-                                     PIN_MODE_INPUT(GPIOA_PIN7) |           \
+                                     PIN_MODE_OUTPUT(GPIOA_PIN7) |           \
                                      PIN_MODE_INPUT(GPIOA_PIN8) |           \
                                      PIN_MODE_INPUT(GPIOA_PIN9) |           \
                                      PIN_MODE_INPUT(GPIOA_PIN10) |          \
@@ -238,7 +238,7 @@
                                      PIN_OSPEED_400K(GPIOA_PIN4) |          \
                                      PIN_OSPEED_400K(GPIOA_PIN5) |          \
                                      PIN_OSPEED_400K(GPIOA_PIN6) |          \
-                                     PIN_OSPEED_400K(GPIOA_PIN7) |          \
+                                     PIN_OSPEED_40M(GPIOA_PIN7) |          \
                                      PIN_OSPEED_400K(GPIOA_PIN8) |          \
                                      PIN_OSPEED_400K(GPIOA_PIN9) |          \
                                      PIN_OSPEED_400K(GPIOA_PIN10) |         \
@@ -254,7 +254,7 @@
                                      PIN_PUPDR_PULLUP(GPIOA_PIN4) |         \
                                      PIN_PUPDR_PULLUP(GPIOA_PIN5) |         \
                                      PIN_PUPDR_PULLUP(GPIOA_PIN6) |         \
-                                     PIN_PUPDR_PULLUP(GPIOA_PIN7) |         \
+                                     PIN_PUPDR_FLOATING(GPIOA_PIN7) |         \
                                      PIN_PUPDR_PULLUP(GPIOA_PIN8) |         \
                                      PIN_PUPDR_PULLUP(GPIOA_PIN9) |         \
                                      PIN_PUPDR_PULLUP(GPIOA_PIN10) |        \
@@ -270,7 +270,7 @@
                                      PIN_ODR_HIGH(GPIOA_PIN4) |             \
                                      PIN_ODR_HIGH(GPIOA_PIN5) |             \
                                      PIN_ODR_HIGH(GPIOA_PIN6) |             \
-                                     PIN_ODR_HIGH(GPIOA_PIN7) |             \
+                                     PIN_ODR_LOW(GPIOA_PIN7) |             \
                                      PIN_ODR_HIGH(GPIOA_PIN8) |             \
                                      PIN_ODR_HIGH(GPIOA_PIN9) |             \
                                      PIN_ODR_HIGH(GPIOA_PIN10) |            \
