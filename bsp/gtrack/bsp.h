@@ -24,15 +24,6 @@ extern void systemPowerOff(void);
  */
 #define CLI_SERIAL_PORT     SD3
 
-/**
- * @brief   GPS serial port.
- * @note    Allowed values are SD1, SD2 or SD3.
- * @note    SD2 (PA2 - TX, PA3 - RX)
- */
-#define GPS_SERIAL_PORT     SD2
-
-#define GPS_TASK_STACK_SIZE 512
-
 #define CTRL_TASK_STACK_SIZE 512
 
 #define LOGGING_THREAD_STACK_SIZE 512
