@@ -469,10 +469,12 @@ void profileInit(void)
   ctrlStateAdd(ALARM_STATE, doStateAlarm, "ALARM");
   ctrlStateAdd(TEST_STATE, doStateTest, "TEST");
 
-//  cliCmdRegister("AT", gsmCmdSend);
+#if EEPROM_SUPPORT
+  cliCmdRegister("AT", gsmCmdSend);
   cliCmdRegister("log_console",  cliEventLogsOn);
   cliCmdRegister("log_eeprom", cliEventLogsOff);
   cliCmdRegister("show_eeprom", cliEventShowEeprom);
+#endif
   cliCmdRegister("start", ctrlGsmEventSmsStartProcess);
   cliCmdRegister("stop", ctrlGsmEventSmsStopProcess);
   cliCmdRegister("state", ctrlGsmEventSmsStateProcess);

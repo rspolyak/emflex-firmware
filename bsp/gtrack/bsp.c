@@ -6,11 +6,25 @@
 * Description: platform specific routines for gtrack PCB
 *
 * Author:      rostokus
-******************************************************************************/
+******************************************************************************
+
+  This library is free software; you can redistribute it and/or
+  modify it under the terms of the GNU Lesser General Public
+  License as published by the Free Software Foundation, either
+  version 3 of the License, or (at your option) any later version.
+  This library is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  Lesser General Public License for more details.
+  You should have received a copy of the GNU Lesser General Public
+  License along with this library; if not, see <http://www.gnu.org/licenses/>.
+******************************************************************************
+*/
 
 #include "common.h"
 #include "bsp.h"
-//#include "cli.h"
+
+#define PWD_OFF_CHANNEL GPIOB_PIN12
 
 static bsp_cb_t bsp_events[BSP_LAST_EVENT];
 
@@ -90,19 +104,8 @@ static void extcb1(EXTDriver *extp, expchannel_t channel)
   (void)extp;
   (void)channel;
 
-  /* send notification about low battery voltage */
-  bspCallEventCb(BSP_LOW_VOLTAGE_EVENT);
-
-  /* indicate low system voltage level */
-  //palSetPad(GPIOC, 6);
-
   /* switch off GSM module */
   gsmPowerOnOff();
-
-  /* before switching device off some delay is required until
-   * user receives power down notification via SMS.
-   * Such delay is implicitly added by gsmPowerOnOff() routine,
-   * so no need to add another one */
 
   /* switch off device */
   systemPowerOff();
@@ -110,12 +113,12 @@ static void extcb1(EXTDriver *extp, expchannel_t channel)
   return;
 }
 
-/* add interrupt for PA2 pin */
-static const EXTConfig lowpwr_cfg = {
+/* External interrupt/event controller (EXTI) config.
+   Each line corresponds to separate channel of EXTI */
+static const EXTConfig pwr_off_cfg = {
   {
     {EXT_CH_MODE_DISABLED, NULL},
     {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_FALLING_EDGE | EXT_CH_MODE_AUTOSTART | EXT_MODE_GPIOA, extcb1},
     {EXT_CH_MODE_DISABLED, NULL},
     {EXT_CH_MODE_DISABLED, NULL},
     {EXT_CH_MODE_DISABLED, NULL},
@@ -126,6 +129,7 @@ static const EXTConfig lowpwr_cfg = {
     {EXT_CH_MODE_DISABLED, NULL},
     {EXT_CH_MODE_DISABLED, NULL},
     {EXT_CH_MODE_DISABLED, NULL},
+    {EXT_CH_MODE_RISING_EDGE | EXT_MODE_GPIOB, extcb1}, /* power on/off button is connected here */
     {EXT_CH_MODE_DISABLED, NULL},
     {EXT_CH_MODE_DISABLED, NULL},
     {EXT_CH_MODE_DISABLED, NULL},
@@ -147,9 +151,14 @@ RV_t bspInit(void)
   palSetPadMode(GPIOB, 10, PAL_MODE_ALTERNATE(7));
   palSetPadMode(GPIOB, 11, PAL_MODE_ALTERNATE(7));
 
+  /* start EXTI driver that handles power off event */
+  extStart(&EXTD1, &pwr_off_cfg);
+
   /* set IO pin responsible for switching DC-DC converter */
   systemPowerOn();
 
+  /* enable processing power on/off button event */
+  extChannelEnable(&EXTD1, PWD_OFF_CHANNEL);
+
   return RV_SUCCESS;
 }
-
