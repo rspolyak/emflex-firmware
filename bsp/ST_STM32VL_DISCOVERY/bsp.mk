@@ -4,3 +4,5 @@ include $(CHIBIOS)/os/hal/ports/STM32/STM32F1xx/platform.mk
 LDSCRIPT= $(STARTUPLD)/STM32F100xB.ld
 
 CSRC+=$(patsubst %.c, %.o, $(wildcard drivers/sensors/gps_api.c))
+
+CSRC+=$(patsubst %.c, %.o, $(wildcard drivers/network/wifi.c))
