@@ -311,7 +311,7 @@
  * PB9  - PIN9                      (input pullup).
  * PB10 - PIN10                     (input pullup).
  * PB11 - PIN11                     (input pullup).
- * PB12 - PIN12                     (input pullup).
+ * PB12 - PIN12                     (input pulldown).
  * PB13 - PIN13                     (input pullup).
  * PB14 - PIN14                     (input pullup).
  * PB15 - PIN15                     (input pullup).
@@ -376,7 +376,7 @@
                                      PIN_PUPDR_PULLUP(GPIOB_PIN9) |         \
                                      PIN_PUPDR_PULLUP(GPIOB_PIN10) |        \
                                      PIN_PUPDR_PULLUP(GPIOB_PIN11) |        \
-                                     PIN_PUPDR_FLOATING(GPIOB_PIN12) |      \
+                                     PIN_PUPDR_PULLDOWN(GPIOB_PIN12) |      \
                                      PIN_PUPDR_PULLUP(GPIOB_PIN13) |        \
                                      PIN_PUPDR_PULLUP(GPIOB_PIN14) |        \
                                      PIN_PUPDR_PULLUP(GPIOB_PIN15))
