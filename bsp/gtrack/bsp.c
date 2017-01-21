@@ -31,13 +31,13 @@ static bsp_cb_t bsp_events[BSP_LAST_EVENT];
 void gsmPowerOnOff(void)
 {
   /* pull down PWRKEY pin in GSM module */
-  palSetPad(GPIOC, GPIOC_PIN13);
+  palSetPad(GPIOC, GSM_PWR_PIN);
 
   /* wait at least 1 sec */
   chThdSleepMilliseconds(1200);
 
   /* release PWRKEY (automatically raises HIGH) */
-  palClearPad(GPIOC, GPIOC_PIN13);
+  palClearPad(GPIOC, GSM_PWR_PIN);
 
   /* give GSM more time to ensure it is UP */
   chThdSleepMilliseconds(100);
@@ -145,11 +145,15 @@ static const EXTConfig pwr_off_cfg = {
 
 RV_t bspInit(void)
 {
-
   /* Activates the UART driver for debugging,
    * PB10 and PB11 are routed to USART3. */
   palSetPadMode(GPIOB, 10, PAL_MODE_ALTERNATE(7));
   palSetPadMode(GPIOB, 11, PAL_MODE_ALTERNATE(7));
+
+  /* Activates GSM driver pins,
+   * PA2 and PA3 are routed to USART2. */
+  palSetPadMode(GPIOA, 2, PAL_MODE_ALTERNATE(7));
+  palSetPadMode(GPIOA, 3, PAL_MODE_ALTERNATE(7));
 
   /* start EXTI driver that handles power off event */
   extStart(&EXTD1, &pwr_off_cfg);
