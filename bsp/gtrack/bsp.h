@@ -47,6 +47,13 @@ extern void systemPowerOff(void);
  */
 #define CLI_SERIAL_PORT     SD3
 
+/**
+ * @brief   GSM serial port.
+ * @note    SD2 (PA2 - TX, PA3 - RX)
+ */
+#undef  GSM_SERIAL_PORT
+#define GSM_SERIAL_PORT     SD2
+
 #define CTRL_TASK_STACK_SIZE 512
 
 #define LOGGING_THREAD_STACK_SIZE 512
@@ -54,6 +61,11 @@ extern void systemPowerOff(void);
 #define CLI_THREAD_STACK_SIZE 512
 
 #define ACCEL_THREAD_STACK_SIZE 512
+
+#define SYS_PWR_PORT GPIOA
+#define SYS_PWR_PIN  GPIOA_PIN7
+
+#define GSM_PWR_PIN  GPIOC_PIN2
 
 #endif /* BSP */
 
