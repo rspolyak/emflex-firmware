@@ -93,7 +93,7 @@ static void extcb1(EXTDriver *extp, expchannel_t channel)
   palSetPad(GPIOC, GSM_PWR_PIN);
 
   /* wait at least 1 sec */
-  for (uint32_t i = 0; i < 0xFFFFF; i++)
+  for (uint32_t i = 0; i < 0xFFFFFF; i++)
       ;
 
   /* release PWRKEY (automatically raises HIGH) */
@@ -137,6 +137,9 @@ static const EXTConfig pwr_off_cfg = {
 
 RV_t bspInit(void)
 {
+  /* Device initialization has started */
+  palSetPad(GPIOC, 6);
+
   /* Activates the UART driver for debugging,
    * PB10 and PB11 are routed to USART3. */
   palSetPadMode(GPIOB, 10, PAL_MODE_ALTERNATE(7));
@@ -157,4 +160,33 @@ RV_t bspInit(void)
   extChannelEnable(&EXTD1, PWD_OFF_CHANNEL);
 
   return RV_SUCCESS;
+}
+
+/* GPT4 callback. */
+static void gpt4cb(GPTDriver *gptp)
+{
+  (void) gptp;
+
+  palTogglePad(GPIOC, 6);
+}
+
+/* GPT4 configuration. */
+static const GPTConfig gpt4cfg = {
+  1000,    /* 1kHz timer clock.*/
+  gpt4cb,    /* Timer callback.*/
+  0,
+  0
+};
+
+RV_t bspInitComplete(void)
+{
+    /* Device initialization completed successfully */
+    palClearPad(GPIOC, 6);
+
+    /* Display normal device activity.
+     * Blink status LED each 3 sec */
+    gptStart(&GPTD4, &gpt4cfg);
+    gptStartContinuous(&GPTD4, 3000); /* 3000 / 1000 = trigger rate in seconds */
+
+    return RV_SUCCESS;
 }

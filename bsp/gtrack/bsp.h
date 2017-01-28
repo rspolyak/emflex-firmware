@@ -36,6 +36,7 @@ typedef enum
 typedef RV_t (*bsp_cb_t)(void);
 
 extern RV_t bspInit(void);
+extern RV_t bspInitComplete(void);
 extern RV_t bspRegisterEventCb(bsp_event_t ev, bsp_cb_t cb);
 extern void gsmPowerOnOff(void);
 extern void systemPowerOff(void);
