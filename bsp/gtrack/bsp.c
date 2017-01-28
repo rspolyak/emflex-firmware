@@ -83,29 +83,21 @@ static RV_t bspCallEventCb(bsp_event_t ev)
   return RV_SUCCESS;
 }
 
-RV_t bspEventDeviceReboot(void)
-{
-  /* switch off GSM module */
-  gsmPowerOnOff();
-
-  /* before switching device off some delay is required until
-   * user receives power down notification via SMS.
-   * Such delay is implicitly added by gsmPowerOnOff() routine,
-   * so no need to add another one */
-
-  /* switch off device */
-  systemPowerOff();
-
-  return RV_SUCCESS;
-}
-
 static void extcb1(EXTDriver *extp, expchannel_t channel)
 {
   (void)extp;
   (void)channel;
 
   /* switch off GSM module */
-  gsmPowerOnOff();
+  /* pull down PWRKEY pin in GSM module */
+  palSetPad(GPIOC, GSM_PWR_PIN);
+
+  /* wait at least 1 sec */
+  for (uint32_t i = 0; i < 0xFFFFF; i++)
+      ;
+
+  /* release PWRKEY (automatically raises HIGH) */
+  palClearPad(GPIOC, GSM_PWR_PIN);
 
   /* switch off device */
   systemPowerOff();
