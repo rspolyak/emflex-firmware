@@ -54,7 +54,7 @@ extern void systemPowerOff(void);
 #undef  GSM_SERIAL_PORT
 #define GSM_SERIAL_PORT     SD2
 
-#define CTRL_TASK_STACK_SIZE 512
+#define CTRL_TASK_STACK_SIZE 768
 
 #define LOGGING_THREAD_STACK_SIZE 512
 
