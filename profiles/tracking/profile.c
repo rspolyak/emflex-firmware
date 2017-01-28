@@ -491,7 +491,8 @@ void profileInit(void)
 
   bspRegisterEventCb(BSP_LOW_VOLTAGE_EVENT, ctrlVoltageEventAlarmProcess);
 
-  cnfgrRegister("Control", ctrlAppInit);
-  cnfgrRegister("GSM",     gsmInit);
-  cnfgrRegister("IMU",     accelGyroInit);
+  cnfgrRegister("Control",      ctrlAppInit);
+  cnfgrRegister("GSM",          gsmInit);
+  cnfgrRegister("IMU",          accelGyroInit);
+  cnfgrRegister("BSP_INIT_FIN", bspInitComplete);
 }
