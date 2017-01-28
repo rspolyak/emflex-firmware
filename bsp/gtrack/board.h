@@ -180,12 +180,12 @@
  * GPIOA setup:
  *
  * PA0  - PIN0                      (input pullup).
- * PA1  - PIN1                      (input pullup).
+ * PA1  - PIN1                      (output pushpull maximum).
  * PA2  - PIN2                      (output pushpull maximum).
  * PA3  - PIN3                      (output pushpull maximum).
- * PA4  - PIN4                      (input pullup).
+ * PA4  - PIN4                      (input pulldown).
  * PA5  - PIN5                      (input pullup).
- * PA6  - PIN6                      (input pullup).
+ * PA6  - PIN6                      (output pushpull maximum).
  * PA7  - PIN7                      (output pushpull maximum).
  * PA8  - PIN8                      (input pullup).
  * PA9  - PIN9                      (input pullup).
@@ -197,12 +197,12 @@
  * PA15 - JTAG_TDI                  (alternate 0).
  */
 #define VAL_GPIOA_MODER             (PIN_MODE_INPUT(GPIOA_PIN0) |           \
-                                     PIN_MODE_INPUT(GPIOA_PIN1) |           \
+                                     PIN_MODE_OUTPUT(GPIOA_PIN1) |           \
                                      PIN_MODE_OUTPUT(GPIOA_PIN2) |           \
                                      PIN_MODE_OUTPUT(GPIOA_PIN3) |          \
                                      PIN_MODE_INPUT(GPIOA_PIN4) |           \
                                      PIN_MODE_INPUT(GPIOA_PIN5) |           \
-                                     PIN_MODE_INPUT(GPIOA_PIN6) |           \
+                                     PIN_MODE_OUTPUT(GPIOA_PIN6) |           \
                                      PIN_MODE_OUTPUT(GPIOA_PIN7) |           \
                                      PIN_MODE_INPUT(GPIOA_PIN8) |           \
                                      PIN_MODE_INPUT(GPIOA_PIN9) |           \
@@ -229,12 +229,12 @@
                                      PIN_OTYPE_PUSHPULL(GPIOA_JTAG_TCK) |   \
                                      PIN_OTYPE_PUSHPULL(GPIOA_JTAG_TDI))
 #define VAL_GPIOA_OSPEEDR           (PIN_OSPEED_400K(GPIOA_PIN0) |          \
-                                     PIN_OSPEED_400K(GPIOA_PIN1) |          \
+                                     PIN_OSPEED_40M(GPIOA_PIN1) |          \
                                      PIN_OSPEED_40M(GPIOA_PIN2) |          \
                                      PIN_OSPEED_40M(GPIOA_PIN3) |           \
                                      PIN_OSPEED_400K(GPIOA_PIN4) |          \
                                      PIN_OSPEED_400K(GPIOA_PIN5) |          \
-                                     PIN_OSPEED_400K(GPIOA_PIN6) |          \
+                                     PIN_OSPEED_40M(GPIOA_PIN6) |          \
                                      PIN_OSPEED_40M(GPIOA_PIN7) |          \
                                      PIN_OSPEED_400K(GPIOA_PIN8) |          \
                                      PIN_OSPEED_400K(GPIOA_PIN9) |          \
@@ -245,12 +245,12 @@
                                      PIN_OSPEED_40M(GPIOA_JTAG_TCK) |       \
                                      PIN_OSPEED_40M(GPIOA_JTAG_TDI))
 #define VAL_GPIOA_PUPDR             (PIN_PUPDR_PULLUP(GPIOA_PIN0) |         \
-                                     PIN_PUPDR_PULLUP(GPIOA_PIN1) |         \
+                                     PIN_PUPDR_FLOATING(GPIOA_PIN1) |         \
                                      PIN_PUPDR_FLOATING(GPIOA_PIN2) |         \
                                      PIN_PUPDR_FLOATING(GPIOA_PIN3) |       \
-                                     PIN_PUPDR_PULLUP(GPIOA_PIN4) |         \
+                                     PIN_PUPDR_PULLDOWN(GPIOA_PIN4) |         \
                                      PIN_PUPDR_PULLUP(GPIOA_PIN5) |         \
-                                     PIN_PUPDR_PULLUP(GPIOA_PIN6) |         \
+                                     PIN_PUPDR_FLOATING(GPIOA_PIN6) |         \
                                      PIN_PUPDR_FLOATING(GPIOA_PIN7) |         \
                                      PIN_PUPDR_PULLUP(GPIOA_PIN8) |         \
                                      PIN_PUPDR_PULLUP(GPIOA_PIN9) |         \
@@ -261,12 +261,12 @@
                                      PIN_PUPDR_PULLDOWN(GPIOA_JTAG_TCK) |   \
                                      PIN_PUPDR_PULLUP(GPIOA_JTAG_TDI))
 #define VAL_GPIOA_ODR               (PIN_ODR_HIGH(GPIOA_PIN0) |             \
-                                     PIN_ODR_HIGH(GPIOA_PIN1) |             \
+                                     PIN_ODR_LOW(GPIOA_PIN1) |             \
                                      PIN_ODR_HIGH(GPIOA_PIN2) |             \
                                      PIN_ODR_LOW(GPIOA_PIN3)  |             \
                                      PIN_ODR_HIGH(GPIOA_PIN4) |             \
                                      PIN_ODR_HIGH(GPIOA_PIN5) |             \
-                                     PIN_ODR_HIGH(GPIOA_PIN6) |             \
+                                     PIN_ODR_LOW(GPIOA_PIN6) |             \
                                      PIN_ODR_LOW(GPIOA_PIN7) |             \
                                      PIN_ODR_HIGH(GPIOA_PIN8) |             \
                                      PIN_ODR_HIGH(GPIOA_PIN9) |             \
