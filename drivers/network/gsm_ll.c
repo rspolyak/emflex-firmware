@@ -155,7 +155,7 @@ RV_t gsmModuleSend(const char *val)
     return RV_FAILURE;
   }
 
-  if ((resp = sdWriteTimeout(&SD1, (uint8_t *) val, strlen(val),
+  if ((resp = sdWriteTimeout(&GSM_SERIAL_PORT, (uint8_t *) val, strlen(val),
                              GSM_WRITE_TIMEOUT)) < Q_OK)
   {
     LOG_TRACE(GSM_CMP,"Error. rv=%i", resp);
@@ -302,17 +302,17 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len, uint32_t *val)
   }
 
   /* gsm module is switched on */
-  if (RV_SUCCESS == gsmCmpCommand(buf, GSM_CPIN_RDY_EVENT) ||
+  if (RV_SUCCESS == gsmCmpCommand(buf, GSM_CALL_RDY_EVENT) ||
       RV_SUCCESS == gsmCmpCommand(buf, GSM_MODULE_VENDOR_NAME))
   {
     gsmReady = true;
 
+    /* allow commands to be dispatched to GSM */
+    cur_command.ack = true;
+
     gsmReadySet();
 
     //gsmModuleConnectGprs();
-
-    /* allow commands to be dispatched to GSM */
-    cur_command.ack = true;
 
     return RV_SUCCESS;
   }
@@ -347,7 +347,7 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len, uint32_t *val)
   {
     return RV_SUCCESS;
   }
-  else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_CALL_RDY_EVENT))
+  else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_CPIN_RDY_EVENT))
   {
     return RV_SUCCESS;
   }
@@ -671,7 +671,9 @@ static THD_FUNCTION(gsmTask, arg)
   RV_t rv = RV_FAILURE;
   uint32_t time = {0};
   char lastCmd[GSM_CTRL_CMD_LEN] = {0};
+#if GSM_ERROR_HANDLE
   BOOL firstTime = TRUE;
+#endif
 
   while (1)
   {
@@ -685,12 +687,12 @@ static THD_FUNCTION(gsmTask, arg)
       if (res == MSG_OK)
       {
         cur_command.id++;
-
+#if GSM_SLEEP
         /* exit sleep mode. serial port will be active after about 50ms */
         palClearPad(GPIOA, GPIOA_PIN2);
         chThdSleepMilliseconds(100);
-
-        //LOG_TRACE(GSM_CMP, "Sending a command #%d:%s", cur_command.id, pBuf);
+#endif
+        LOG_TRACE(GSM_CMP, "Sending a command #%d:%s\r\n", cur_command.id, pBuf);
         if (RV_SUCCESS != gsmModuleSend(pBuf))
         {
           LOG_TRACE(GSM_CMP,"gsmModuleSend failed\r\n");
@@ -712,16 +714,21 @@ static THD_FUNCTION(gsmTask, arg)
 
     /* get data from serial port if any. Get up to sizeof(buf) bytes */
     memset(buf, 0, sizeof(buf));
-    gsmInByteNum = sdAsynchronousRead(&SD1, (uint8_t *) buf, MAX_GSM_CMD_LEN - 1);
+    gsmInByteNum = sdAsynchronousRead(&GSM_SERIAL_PORT, (uint8_t *) buf, MAX_GSM_CMD_LEN - 1);
     if ((gsmInByteNum > 0) && (gsmInByteNum < MAX_GSM_CMD_LEN))
     {
       LOG_TRACE(GSM_CMP, "GSM returned %d bytes:%s\r\n", gsmInByteNum, buf);
 
       rv = gsmModuleCmdParse(buf, gsmInByteNum, gsmModuleCmdAnalyze, &val);
+      if (rv != RV_SUCCESS)
+      {
+          LOG_TRACE(GSM_CMP,"GSM parser error: %u\r\n", rv);
+      }
 
       /* check if response to previously sent command was received */
       if (val)
       {
+#if GSM_ERROR_HANDLE
         if (val != GSM_CMD_OK)
         {
           /* if out of balance error, then wait for user to pay */
@@ -752,12 +759,13 @@ static THD_FUNCTION(gsmTask, arg)
             }
           }
         }
-
+#endif
         /* allow next command to be dispatched to GSM module */
         cur_command.ack = true;
-
+#if GSM_SLEEP
         /* enter sleep mode */
         palSetPad(GPIOA, GPIOA_PIN2);
+#endif
       }
       val = 0;
     }
@@ -860,6 +868,7 @@ RV_t gsmModuleInit()
       return RV_FAILURE;
     }
 
+    /* add 1 sec delay */
     while (count < 10)
     {
       chThdSleepMilliseconds(100);
@@ -872,12 +881,12 @@ RV_t gsmModuleInit()
       count++;
     }
 
-    /* If GSM module does not response within timeout (1 sec),
+    /* If GSM module does not response within timeout,
      * proceed to switch it on.
      */
     gsmPowerOnOff();
 
-    /* block on cond var until received "READY" from GSM */
+    /* block on cond var until received "Call Ready" from GSM */
     gsmReadyGet();
 
     /* GSM is ready to be configured. Send initialization commands */
@@ -998,9 +1007,7 @@ RV_t gsmCmdSend(const char *gsm_command)
   RV_t rv = RV_FAILURE;
 
   if (gsmReadyCheck() == true)
-  {
-    LOG_TRACE(GSM_CMP, "%s\r\n", gsm_command);
-
+  { 
     if (RV_SUCCESS == (rv = gsmModuleCmdSend(gsm_command)))
     {
       return RV_SUCCESS;
