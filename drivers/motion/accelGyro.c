@@ -56,6 +56,8 @@ static imuThreshold_t xThreshold;
 static imuThreshold_t yThreshold;
 const uint8_t numSamples = 100;
 
+static bool accel_is_inited_g = FALSE;
+
 static bool accel_is_enabled = FALSE;
 static MUTEX_DECL(gyro_alarm_mutex);
 static CONDVAR_DECL(gyro_alarm_cond_var);
@@ -63,6 +65,16 @@ static CONDVAR_DECL(gyro_alarm_cond_var);
 static THD_WORKING_AREA(accelGyroThread, ACCEL_THREAD_STACK_SIZE);
 
 static RV_t imuCallEventCb(imuEvent_t event);
+
+static bool isAccelInited(void)
+{
+  return accel_is_inited_g;
+}
+
+static void accelInitedSet(bool value)
+{
+  accel_is_inited_g = value;
+}
 
 static RV_t accelGyroRead(uint8_t addr, uint8_t reg, uint8_t *out, uint8_t *err)
 {
@@ -196,6 +208,7 @@ static RV_t accelGet(rawImu_t *dof)
       rv = RV_FAILURE;
       break;
     }
+
     if (RV_SUCCESS != accelGyroRead(MPU6050_ADDRESS, MPU6050_RA_ACCEL_XOUT_L,
                                     &ACCEL_XOUT_L, &err))
     {
@@ -258,6 +271,12 @@ static RV_t imuAngleGet(dof_t *dof)
   const float sRate = 0.1;
   const float alfa = 0.98;//tau / (tau + sRate);
 
+  if (!isAccelInited())
+  {
+    LOG_ERROR(GYRO_CMP, "Accelerometer is not inited!");
+    return RV_NOT_READY;
+  }
+
   if (RV_SUCCESS != accelGet(&dof_local))
   {
     return RV_FAILURE;
@@ -289,6 +308,12 @@ RV_t imuSumAngleGet(dof_t *dof)
   dof_t cur;
   dof_t average;
   uint32_t i = 0;
+
+  if (!isAccelInited())
+  {
+    LOG_ERROR(GYRO_CMP, "Accelerometer is not inited!");
+    return RV_NOT_READY;
+  }
 
   cur.x = cur.y = cur.z = average.x = average.y = average.z = 0.0;
 
@@ -391,6 +416,8 @@ RV_t accelGyroInit(void)
   /* communication interface */
   i2cDrvInit();
 
+  LOG_TRACE(GYRO_CMP, "Initializing Gyroscope");
+
   do
   {
     /* Check WHO_AM_I register */
@@ -470,6 +497,8 @@ RV_t accelGyroInit(void)
     chThdCreateStatic(accelGyroThread, sizeof(accelGyroThread), NORMALPRIO+1,
                       accelGyroTask, 0);
 
+    accelInitedSet(TRUE);
+
     return RV_SUCCESS;
 
   } while (0);
@@ -479,6 +508,12 @@ RV_t accelGyroInit(void)
 
 RV_t imuEnable(void)
 {
+  if (!isAccelInited())
+  {
+    LOG_ERROR(GYRO_CMP, "Accelerometer is not inited!");
+    return RV_NOT_READY;
+  }
+
   chMtxLock(&gyro_alarm_mutex);
 
   accel_is_enabled = TRUE;
@@ -492,6 +527,12 @@ RV_t imuEnable(void)
 
 RV_t imuDisable(void)
 {
+  if (!isAccelInited())
+  {
+    LOG_ERROR(GYRO_CMP, "Accelerometer is not inited!");
+    return RV_NOT_READY;
+  }
+
   chMtxLock(&gyro_alarm_mutex);
 
   accel_is_enabled = FALSE;
@@ -519,6 +560,12 @@ RV_t imuWait(void)
 
 RV_t imuThresholdSet(dof_t dof, float k)
 {
+  if (!isAccelInited())
+  {
+    LOG_ERROR(GYRO_CMP, "Accelerometer is not inited!");
+    return RV_NOT_READY;
+  }
+
   xThreshold.min = (dof.x - k);
   xThreshold.max = (dof.x + k);
   yThreshold.min = (dof.y - k);
