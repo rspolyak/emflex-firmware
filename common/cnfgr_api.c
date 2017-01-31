@@ -22,6 +22,7 @@
 
 #include "common.h"
 #include "cnfgr.h"
+#include "logging.h"
 
 static uint32_t emptyElement = 0;
 static cid_t cidList[CNFGR_COMPONENT_MAX_NUMBER];
@@ -66,7 +67,7 @@ RV_t cnfgrInvoke(void)
 
     if (RV_SUCCESS != cidList[i].cb())
     {
-      return RV_FAILURE;
+      LOG_ERROR(CNFGR_CMP, "Failed to initialize %s!", cidList[i].name);
     }
   }
 

@@ -22,13 +22,6 @@
 #define GSM_LL
 
 /**
- * @brief   CLI serial port.
- * @note    Allowed values are SD1, SD2 or SD3.
- * @note    SD1 (PA9 - TX, PA10 - RX)
- */
-#define GSM_SERIAL_PORT     SD1
-
-/**
  * @brief   CLI serial speed.
  */
 #define GSM_SERIAL_SPEED    19200
