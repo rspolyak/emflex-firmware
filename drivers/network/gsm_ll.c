@@ -309,6 +309,9 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len, uint32_t *val)
 
     gsmReadySet();
 
+    /* GSM is ready to be configured. Send initialization commands */
+    gsmModuleCfg();
+
     //gsmModuleConnectGprs();
 
     /* allow commands to be dispatched to GSM */
@@ -876,17 +879,6 @@ RV_t gsmModuleInit()
      * proceed to switch it on.
      */
     gsmPowerOnOff();
-
-    chThdSleepMilliseconds(1000);
-
-    if (gsmReady == false)
-    {
-      LOG_ERROR(GSM_CMP, "GSM module init failed");
-      return RV_NOT_READY;
-    }
-
-    /* GSM is ready to be configured. Send initialization commands */
-    gsmModuleCfg();
 
   return RV_SUCCESS;
 }
