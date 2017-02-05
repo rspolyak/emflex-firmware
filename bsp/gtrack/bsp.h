@@ -61,7 +61,7 @@ extern void systemPowerOff(void);
 
 #define CLI_THREAD_STACK_SIZE 512
 
-#define ACCEL_THREAD_STACK_SIZE 512
+#define ACCEL_THREAD_STACK_SIZE 1024
 
 #define SYS_PWR_PORT GPIOA
 #define SYS_PWR_PIN  GPIOA_PIN7
