@@ -79,7 +79,7 @@ RV_t doStateIdle(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
       /* enable collection of statistics from gyro and accel */
       imuSumAngleGet(&dof);
 
-      LOG_TRACE(CONTROL_CMP, "x=%f y=%f", dof.x, dof.y);
+      LOG_TRACE(CONTROL_CMP, "x=%f y=%f\r\n", dof.x, dof.y);
 
       imuThresholdSet(dof, 0.5);
       imuEnable();
@@ -469,8 +469,7 @@ void profileInit(void)
   ctrlStateAdd(ALARM_STATE, doStateAlarm, "ALARM");
   ctrlStateAdd(TEST_STATE, doStateTest, "TEST");
 
-#if EEPROM_SUPPORT
-  cliCmdRegister("AT", gsmCmdSend);
+#if EEPROM_SUPPORT 
   cliCmdRegister("log_console",  cliEventLogsOn);
   cliCmdRegister("log_eeprom", cliEventLogsOff);
   cliCmdRegister("show_eeprom", cliEventShowEeprom);
@@ -492,7 +491,7 @@ void profileInit(void)
   bspRegisterEventCb(BSP_LOW_VOLTAGE_EVENT, ctrlVoltageEventAlarmProcess);
 
   cnfgrRegister("Control",      ctrlAppInit);
-  cnfgrRegister("GSM",          gsmInit);
+  cnfgrRegister("GSM",          gsmInit);  
   cnfgrRegister("IMU",          accelGyroInit);
   cnfgrRegister("BSP_INIT_FIN", bspInitComplete);
 }
