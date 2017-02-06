@@ -36,6 +36,8 @@
 #include "bsp.h"
 #include "serial_port.h"
 
+#define GPRS_ENABLED
+
 gsmCbFunc_t gsmCbArray_g[GSM_EVENT_LAST];
 phoneBook_t phoneBook_g;
 
@@ -229,12 +231,17 @@ void gsmModuleDisconnectGprs(void)
 
 void gsmModuleSendGetHttpRequest(void)
 {
+    gsmModuleConnectGprs();
+
 #ifdef GPRS_ENABLED
     gsmCmdSend(GSM_HTTP_SET_BEARER_PROFILE_ID);
     gsmCmdSend(GSM_HTTP_SET_URL);
     gsmCmdSend(GSM_HTTP_SET_GET_METHOD);
     gsmCmdSend(GSM_HTTP_READ_DATA);
 #endif
+
+    gsmModuleDisconnectGprs();
+
 }
 
 void gsmModuleCfg(void)
@@ -308,9 +315,6 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len, uint32_t *val)
     gsmReady = true;
 
     gsmReadySet();
-
-    /* GSM is ready to be configured. Send initialization commands */
-    gsmModuleCfg();
 
     //gsmModuleConnectGprs();
 
@@ -777,6 +781,8 @@ static THD_FUNCTION(gsmTask, arg)
 
 RV_t gsmTaskInit(void)
 {
+  char number[] = "+380676708491";
+
   /* create message queue to send asynchronous requests */
   chMBObjectInit(&gsm_tx_mb_s, gsm_tx_msg_queue_s, MAILBOX_QUEUE_TX_SIZE);
 
@@ -792,10 +798,9 @@ RV_t gsmTaskInit(void)
   memset(&phoneBook_g, 0, sizeof(phoneBook_g));
 
   phoneBook_g.resp_is_set = TRUE;
-  strncpy(phoneBook_g.resp_number, "+380982297151", sizeof(phoneBook_g.resp_number));
+  strncpy(phoneBook_g.resp_number, number, sizeof(phoneBook_g.resp_number));
 
   /* add predefined phone number to allow out-of-box configuration */
-  char number[] = "+380982297151";
   gsmPhoneNumberAdd(number);
 
   return RV_SUCCESS;
@@ -879,6 +884,12 @@ RV_t gsmModuleInit()
      * proceed to switch it on.
      */
     gsmPowerOnOff();
+
+    /* block on cond var until received "READY" from GSM */
+    gsmReadyGet();
+
+    /* GSM is ready to be configured. Send initialization commands */
+    gsmModuleCfg();
 
   return RV_SUCCESS;
 }

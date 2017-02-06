@@ -86,7 +86,7 @@
 #define GSM_CHECK_GPRS_NETWORK "AT+CGATT?\r"
 #define GSM_ATTACH_GPRS_NETWORK "AT+CGATT=1\r"
 #define GSM_CONTYPE_GPRS "AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"\r"
-#define GSM_CONTYPE_APN "AT+SAPBR=3,1,\"APN\",\"www.kyivstar.net\"\r"
+#define GSM_CONTYPE_APN "AT+SAPBR=3,1,\"APN\",\"internet\"\r"
 #define GSM_GPRS_CONNECT "AT+SAPBR=1,1\r"
 #define GSM_GPRS_CHECK "AT+SAPBR=2,1\r"
 #define GSM_ENABLE_HTTP_SERVICE "AT+HTTPINIT\r"
