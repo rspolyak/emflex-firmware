@@ -404,22 +404,16 @@ static RV_t ctrlGsmStateSend()
     STRCAT_SAFE(buf, temp);
 
     osapiItoa(signal, temp, sizeof(temp));
-    STRCAT_SAFE(buf, "\r\nSIGNAL: \r\n");
+    STRCAT_SAFE(buf, "\r\nSIGNAL: ");
     STRCAT_SAFE(buf, temp);
 
     osapiItoa(battery, temp, sizeof(temp));
-    STRCAT_SAFE(buf, "\r\nBATTERY (%): \r\n");
+    STRCAT_SAFE(buf, "\r\nBATTERY (%): ");
     STRCAT_SAFE(buf, temp);
 
-    STRCAT_SAFE(buf, "\r\nSTATE: \r\n");
-    if (RV_SUCCESS != strncpy(temp, ctrlCurStateToStr(), sizeof(temp)))
-    {
-      STRCAT_SAFE(buf, "not ready\r\n");
-    }
-    else
-    {
-      STRCAT_SAFE(buf, temp);
-    }
+    STRCAT_SAFE(buf, "\r\nSTATE: ");
+    strncpy(temp, ctrlCurStateToStr(), sizeof(temp));
+    STRCAT_SAFE(buf, temp);
 
     if (RV_SUCCESS != gsmSmsSend(buf))
     {
