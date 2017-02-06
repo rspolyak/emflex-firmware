@@ -4,5 +4,4 @@ include $(CHIBIOS)/os/hal/ports/STM32/STM32F3xx/platform.mk
 LDSCRIPT= $(STARTUPLD)/STM32F303xC.ld
 MCU=cortex-m4
 
-CSRC+=$(patsubst %.c, %.o, $(wildcard drivers/*/*.c))
-CSRC+=$(patsubst %.c, %.o, $(wildcard drivers/*.c))
+CSRC+=$(patsubst %.c, %.o, $(wildcard drivers/sensors/gps_api.c))
