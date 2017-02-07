@@ -26,12 +26,24 @@
 #include "common.h"
 #include "logging.h"
 
+#if defined STM32L1XX_MD || defined STM32F10X_MD_VL 
 const I2CConfig i2cCfg =
 {
   OPMODE_I2C,
   100000,
   STD_DUTY_CYCLE
 };
+#endif
+
+#if defined STM32F303xC
+static const I2CConfig i2cCfg = {
+  STM32_TIMINGR_PRESC(15U) |
+  STM32_TIMINGR_SCLDEL(4U) | STM32_TIMINGR_SDADEL(2U) |
+  STM32_TIMINGR_SCLH(15U)  | STM32_TIMINGR_SCLL(21U),
+  0,
+  0
+};
+#endif
 
 void i2cDrvInit(void)
 {
