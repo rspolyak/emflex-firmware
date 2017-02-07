@@ -294,20 +294,6 @@ uint32_t logTimeStampGet(void)
   return (timp.millisecond - timestamp_g) / 60000;
 }
 
-#if 0
-RV_t gsmCmdSend(void)
-{
-  char buf[32] = {0};
-
-  strncpy(buf, cmdBuf, len);
-  buf[len] = '\r';
-  buf[len+1] = '\0';
-
-  gsmATCmdSend(buf, sizeof(buf));
-  return RV_SUCCESS;
-}
-#endif
-
 #if EEPROM_SUPPORT
 RV_t cliEventLogsOn(void)
 {
