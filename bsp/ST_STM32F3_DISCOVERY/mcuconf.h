@@ -48,7 +48,7 @@
 #define STM32_PREDIV_VALUE                  1
 #define STM32_PLLMUL_VALUE                  9
 #define STM32_HPRE                          STM32_HPRE_DIV1
-#define STM32_PPRE1                         STM32_PPRE1_DIV2
+#define STM32_PPRE1                         STM32_PPRE1_DIV4
 #define STM32_PPRE2                         STM32_PPRE2_DIV2
 #define STM32_MCOSEL                        STM32_MCOSEL_NOCLOCK
 #define STM32_ADC12PRES                     STM32_ADC12PRES_DIV1
@@ -109,10 +109,10 @@
 /*
  * GPT driver system settings.
  */
-#define STM32_GPT_USE_TIM1                  FALSE
+#define STM32_GPT_USE_TIM1                  TRUE
 #define STM32_GPT_USE_TIM2                  FALSE
 #define STM32_GPT_USE_TIM3                  FALSE
-#define STM32_GPT_USE_TIM4                  TRUE
+#define STM32_GPT_USE_TIM4                  FALSE
 #define STM32_GPT_USE_TIM6                  FALSE
 #define STM32_GPT_USE_TIM7                  FALSE
 #define STM32_GPT_USE_TIM8                  FALSE
