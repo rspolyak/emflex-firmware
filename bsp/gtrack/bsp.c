@@ -130,9 +130,6 @@ RV_t bspInit(void)
   /* set IO pin responsible for switching DC-DC converter */
   bspSystemPowerOn();
 
-  /* enable processing power on/off button event */
-  extChannelEnable(&EXTD1, BSP_PWR_OFF_CHANNEL);
-
   return RV_SUCCESS;
 }
 
@@ -156,6 +153,9 @@ RV_t bspInitComplete(void)
 {
     /* Device initialization completed successfully */
     palClearPad(GPIOC, 6);
+
+    /* enable processing power on/off button event */
+    extChannelEnable(&EXTD1, BSP_PWR_OFF_CHANNEL);
 
     /* Display normal device activity.
      * Blink status LED each 3 sec */
