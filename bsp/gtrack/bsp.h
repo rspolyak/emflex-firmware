@@ -26,19 +26,10 @@
 
 #include "common.h"
 
-typedef enum
-{
-  BSP_LOW_VOLTAGE_EVENT = 0,
-
-  BSP_LAST_EVENT
-} bsp_event_t;
-
-typedef RV_t (*bsp_cb_t)(void);
-
 extern RV_t bspInit(void);
-extern RV_t bspRegisterEventCb(bsp_event_t ev, bsp_cb_t cb);
-extern void gsmPowerOnOff(void);
-extern void systemPowerOff(void);
+extern RV_t bspInitComplete(void);
+extern void bspGsmPowerOnOff(void);
+extern void bspSystemPowerOff(void);
 
 /**
  * @brief   CLI serial port.
@@ -54,18 +45,18 @@ extern void systemPowerOff(void);
 #undef  GSM_SERIAL_PORT
 #define GSM_SERIAL_PORT     SD2
 
-#define CTRL_TASK_STACK_SIZE 512
+#define CTRL_TASK_STACK_SIZE 768
 
 #define LOGGING_THREAD_STACK_SIZE 512
 
 #define CLI_THREAD_STACK_SIZE 512
 
-#define ACCEL_THREAD_STACK_SIZE 512
+#define ACCEL_THREAD_STACK_SIZE 768
 
-#define SYS_PWR_PORT GPIOA
-#define SYS_PWR_PIN  GPIOA_PIN7
+#define BSP_SYS_PWR_PORT GPIOA
+#define BSP_SYS_PWR_PIN  GPIOA_PIN7
 
-#define GSM_PWR_PIN  GPIOC_PIN2
+#define BSP_GSM_PWR_PIN  GPIOC_PIN2
 
 #endif /* BSP */
 

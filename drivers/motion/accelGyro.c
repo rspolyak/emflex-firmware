@@ -327,7 +327,7 @@ RV_t imuSumAngleGet(dof_t *dof)
     }
     else
     {
-      LOG_TRACE(GYRO_CMP, "Error!\r\n");
+      LOG_TRACE(GYRO_CMP, "Error!");
     }
     chThdSleepMilliseconds(30);
   }
@@ -360,7 +360,7 @@ static THD_FUNCTION(accelGyroTask, arg)
     {
       if (RV_SUCCESS != imuAngleGet(&dof))
       {
-        LOG_TRACE(GYRO_CMP,"Error!\r\n");
+        LOG_TRACE(GYRO_CMP,"Error!");
         continue;
       }
 
@@ -422,7 +422,7 @@ RV_t accelGyroInit(void)
   {
     /* Check WHO_AM_I register */
     rv = accelGyroRead(MPU6050_ADDRESS, MPU6050_RA_WHO_AM_I, rcvBuf, &err);
-    if ((rv != MSG_OK) && (rcvBuf[0] == MPU6050_ADDRESS))
+    if (rv != RV_SUCCESS)
     {
       LOG_TRACE(GYRO_CMP, "WHO_AM_I=error = %d", err);
       break;
@@ -433,65 +433,61 @@ RV_t accelGyroInit(void)
      * 1000/1+0 = 1000Hz
      */
     rv = accelGyroWrite(MPU6050_ADDRESS, MPU6050_RA_SMPLRT_DIV, 0x00, &err);
-    if (rv != MSG_OK)
+    if (rv != RV_SUCCESS)
     {
-      LOG_TRACE(GYRO_CMP, "Could not write MPU6050_RA_SMPLRT_DIV\r\n");
+      LOG_TRACE(GYRO_CMP, "Could not write MPU6050_RA_SMPLRT_DIV");
       break;
     }
 
     /* Disable FSync - 5,4,3 bits. DLPF enable at 5Hz*/
     rv = accelGyroWrite(MPU6050_ADDRESS, MPU6050_RA_CONFIG, 0x06, &err);
-    if (rv != MSG_OK)
+    if (rv != RV_SUCCESS)
     {
-      LOG_TRACE(GYRO_CMP, "Could not disable FSync\r\n");
+      LOG_TRACE(GYRO_CMP, "Could not disable FSync");
       break;
     }
 
     /* Disable gyro self tests, scale of 250 degrees/s */
     rv = accelGyroWrite(MPU6050_ADDRESS, MPU6050_RA_GYRO_CONFIG, 0x00, &err);
-    if (rv != MSG_OK)
+    if (rv != RV_SUCCESS)
     {
-      LOG_TRACE(GYRO_CMP, "Could not disable gyro self tests\r\n");
+      LOG_TRACE(GYRO_CMP, "Could not disable gyro self tests");
       break;
     }
 
     /* Disable accel self tests, scale of +-2g, no DHPF */
     rv = accelGyroWrite(MPU6050_ADDRESS, MPU6050_RA_ACCEL_CONFIG, 0x00, &err);
-    if (rv != MSG_OK)
+    if (rv != RV_SUCCESS)
     {
-      LOG_TRACE(GYRO_CMP, "error\r\n");
+      LOG_TRACE(GYRO_CMP, "error");
       break;
     }
 
     /* Setup INT pin and AUX I2C pass through */
     rv = accelGyroWrite(MPU6050_ADDRESS, MPU6050_RA_INT_PIN_CFG, 0x00, &err);
-    if (rv != MSG_OK)
+    if (rv != RV_SUCCESS)
     {
-      LOG_TRACE(GYRO_CMP, "error\r\n");
+      LOG_TRACE(GYRO_CMP, "error");
       break;
     }
 
     /* Enable data ready interrupt */
     rv = accelGyroWrite(MPU6050_ADDRESS, MPU6050_RA_INT_ENABLE, 0x00, &err);
-    if (rv != MSG_OK)
+    if (rv != RV_SUCCESS)
     {
-      LOG_TRACE(GYRO_CMP, "error\r\n");
+      LOG_TRACE(GYRO_CMP, "error");
       break;
     }
 
     /* Sets clock source to gyro reference w/ PLL */
     rv = accelGyroWrite(MPU6050_ADDRESS, MPU6050_RA_PWR_MGMT_1, 0x02, &err);
-    if (rv != MSG_OK)
+    if (rv != RV_SUCCESS)
     {
-      LOG_TRACE(GYRO_CMP, "error\r\n");
+      LOG_TRACE(GYRO_CMP, "error");
       break;
     }
 
     chThdSleepMilliseconds(100);
-
-    /*gyroCalibrate();
-
-    accelCalibrate();*/
 
     /* Create thread for processing data from accelerometer and gyroscope */
     chThdCreateStatic(accelGyroThread, sizeof(accelGyroThread), NORMALPRIO+1,
