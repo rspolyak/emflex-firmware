@@ -36,6 +36,13 @@
 #include "bsp.h"
 #include "serial_port.h"
 
+/* Handle errors returned by GSM module,
+ * like out of balance, network unreachable */
+//#define GSM_ERROR_HANDLE
+
+/* Enables GSM low power mode */
+//#define GSM_SLEEP
+
 gsmCbFunc_t gsmCbArray_g[GSM_EVENT_LAST];
 phoneBook_t phoneBook_g;
 
@@ -692,7 +699,7 @@ static THD_FUNCTION(gsmTask, arg)
         palClearPad(GPIOA, GPIOA_PIN2);
         chThdSleepMilliseconds(100);
 #endif
-        LOG_TRACE(GSM_CMP, "Sending a command #%d:%s\r\n", cur_command.id, pBuf);
+        LOG_TRACE(GSM_CMP, "Sending a command #%d:%s", cur_command.id, pBuf);
         if (RV_SUCCESS != gsmModuleSend(pBuf))
         {
           LOG_TRACE(GSM_CMP,"gsmModuleSend failed\r\n");
@@ -717,12 +724,12 @@ static THD_FUNCTION(gsmTask, arg)
     gsmInByteNum = sdAsynchronousRead(&GSM_SERIAL_PORT, (uint8_t *) buf, MAX_GSM_CMD_LEN - 1);
     if ((gsmInByteNum > 0) && (gsmInByteNum < MAX_GSM_CMD_LEN))
     {
-      LOG_TRACE(GSM_CMP, "GSM returned %d bytes:%s\r\n", gsmInByteNum, buf);
+      LOG_TRACE(GSM_CMP, "GSM returned %d bytes:%s", gsmInByteNum, buf);
 
       rv = gsmModuleCmdParse(buf, gsmInByteNum, gsmModuleCmdAnalyze, &val);
       if (rv != RV_SUCCESS)
       {
-          LOG_TRACE(GSM_CMP,"GSM parser error: %u\r\n", rv);
+          LOG_TRACE(GSM_CMP,"GSM parser error: %u", rv);
       }
 
       /* check if response to previously sent command was received */
@@ -738,7 +745,7 @@ static THD_FUNCTION(gsmTask, arg)
            * and reboot GSM if did not help */
           if ((val == GSM_CME_ERROR) || (val == GSM_CMS_ERROR))
           {
-            LOG_TRACE(GSM_CMP,"GSM replied with ERROR. rv=%u\r\n", rv);
+            LOG_TRACE(GSM_CMP,"GSM replied with ERROR. rv=%u", rv);
 
             if (firstTime)
             {
@@ -884,7 +891,7 @@ RV_t gsmModuleInit()
     /* If GSM module does not response within timeout,
      * proceed to switch it on.
      */
-    gsmPowerOnOff();
+    bspGsmPowerOnOff();
 
     /* block on cond var until received "Call Ready" from GSM */
     gsmReadyGet();
@@ -979,22 +986,6 @@ RV_t gsmTaskCb(const char *in)
   if (RV_SUCCESS == gsmCmpCommand(in, STATE_CMD))
   {
     return gsmCallEventCb(GSM_EVENT_SMS_STATE);
-  }
-
-  if (RV_SUCCESS == gsmCmpCommand(in, REBOOT_CMD))
-  {
-      /* switch off GSM module */
-      gsmPowerOnOff();
-
-      /* before switching device off some delay is required until
-      * user receives power down notification via SMS.
-      * Such delay is implicitly added by gsmPowerOnOff() routine,
-      * so no need to add another one */
-
-      /* switch off device */
-      systemPowerOff();
-
-    return RV_SUCCESS;
   }
 
   LOG_TRACE(GSM_CMP,"Unsupported SMS command\r\n");

@@ -24,6 +24,7 @@
 #ifndef MPU_DEF
 #define MPU_DEF
 
+/* MPU6050 address. Depends on voltage level on AD0 pin */
 #define MPU6050_ADDRESS         0x69
 
 #define MPU6050_RA_XG_OFFS_TC 0x00 //[7] PWR_MODE, [6:1] XG_OFFS_TC, [0] OTP_BNK_VLD

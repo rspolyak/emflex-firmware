@@ -24,90 +24,64 @@
 #include "common.h"
 #include "bsp.h"
 
-#define PWD_OFF_CHANNEL GPIOB_PIN12
+#define BSP_PWR_OFF_CHANNEL GPIOB_PIN12
 
-static bsp_cb_t bsp_events[BSP_LAST_EVENT];
-
-void gsmPowerOnOff(void)
+void bspGsmPowerOnOff(void)
 {
   /* pull down PWRKEY pin in GSM module */
-  palSetPad(GPIOC, GSM_PWR_PIN);
+  palSetPad(GPIOC, BSP_GSM_PWR_PIN);
 
   /* wait at least 1 sec */
   chThdSleepMilliseconds(1200);
 
   /* release PWRKEY (automatically raises HIGH) */
-  palClearPad(GPIOC, GSM_PWR_PIN);
+  palClearPad(GPIOC, BSP_GSM_PWR_PIN);
 
   /* give GSM more time to ensure it is UP */
   chThdSleepMilliseconds(100);
 }
 
-void systemPowerOn(void)
+void bspSystemPowerOn(void)
 {
   /* PWR IO is initialized in board.h file */
-  palSetPad(SYS_PWR_PORT, SYS_PWR_PIN);
+  palSetPad(BSP_SYS_PWR_PORT, BSP_SYS_PWR_PIN);
 
   return;
 }
 
-void systemPowerOff(void)
+void bspSystemPowerOff(void)
 {
   /* PWR IO is initialized in board.h file */
-  palClearPad(SYS_PWR_PORT, SYS_PWR_PIN);
+  palClearPad(BSP_SYS_PWR_PORT, BSP_SYS_PWR_PIN);
 
   return;
 }
 
-RV_t bspRegisterEventCb(bsp_event_t ev, bsp_cb_t cb)
-{
-  if (ev >= BSP_LAST_EVENT)
-  {
-    return RV_FAILURE;
-  }
-
-  bsp_events[ev] = cb;
-
-  return RV_SUCCESS;
-}
-
-static RV_t bspCallEventCb(bsp_event_t ev)
-{
-  if (ev >= BSP_LAST_EVENT)
-  {
-    return RV_FAILURE;
-  }
-
-  bsp_events[ev]();
-
-  return RV_SUCCESS;
-}
-
-static void extcb1(EXTDriver *extp, expchannel_t channel)
+static void bspExtcb1(EXTDriver *extp, expchannel_t channel)
 {
   (void)extp;
   (void)channel;
 
   /* switch off GSM module */
   /* pull down PWRKEY pin in GSM module */
-  palSetPad(GPIOC, GSM_PWR_PIN);
+  palSetPad(GPIOC, BSP_GSM_PWR_PIN);
 
   /* wait at least 1 sec */
   for (uint32_t i = 0; i < 0xFFFFFF; i++)
       ;
 
   /* release PWRKEY (automatically raises HIGH) */
-  palClearPad(GPIOC, GSM_PWR_PIN);
+  palClearPad(GPIOC, BSP_GSM_PWR_PIN);
 
   /* switch off device */
-  systemPowerOff();
+  bspSystemPowerOff();
 
   return;
 }
 
 /* External interrupt/event controller (EXTI) config.
    Each line corresponds to separate channel of EXTI */
-static const EXTConfig pwr_off_cfg = {
+static const EXTConfig bspPwrCfg = {
   {
     {EXT_CH_MODE_DISABLED, NULL},
     {EXT_CH_MODE_DISABLED, NULL},
@@ -121,7 +95,7 @@ static const EXTConfig pwr_off_cfg = {
     {EXT_CH_MODE_DISABLED, NULL},
     {EXT_CH_MODE_DISABLED, NULL},
     {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_RISING_EDGE | EXT_MODE_GPIOB, extcb1}, /* power on/off button is connected here */
+    {EXT_CH_MODE_RISING_EDGE | EXT_MODE_GPIOB, bspExtcb1}, /* power on/off button is connected here */
     {EXT_CH_MODE_DISABLED, NULL},
     {EXT_CH_MODE_DISABLED, NULL},
     {EXT_CH_MODE_DISABLED, NULL},
@@ -151,19 +125,19 @@ RV_t bspInit(void)
   palSetPadMode(GPIOA, 3, PAL_MODE_ALTERNATE(7));
 
   /* start EXTI driver that handles power off event */
-  extStart(&EXTD1, &pwr_off_cfg);
+  extStart(&EXTD1, &bspPwrCfg);
 
   /* set IO pin responsible for switching DC-DC converter */
-  systemPowerOn();
+  bspSystemPowerOn();
 
   /* enable processing power on/off button event */
-  extChannelEnable(&EXTD1, PWD_OFF_CHANNEL);
+  extChannelEnable(&EXTD1, BSP_PWR_OFF_CHANNEL);
 
   return RV_SUCCESS;
 }
 
 /* GPT4 callback. */
-static void gpt4cb(GPTDriver *gptp)
+static void bspGpt4cb(GPTDriver *gptp)
 {
   (void) gptp;
 
@@ -171,9 +145,9 @@ static void gpt4cb(GPTDriver *gptp)
 }
 
 /* GPT4 configuration. */
-static const GPTConfig gpt4cfg = {
+static const GPTConfig bspGpt4cfg = {
   1000,    /* 1kHz timer clock.*/
-  gpt4cb,    /* Timer callback.*/
+  bspGpt4cb,    /* Timer callback.*/
   0,
   0
 };
@@ -185,7 +159,7 @@ RV_t bspInitComplete(void)
 
     /* Display normal device activity.
      * Blink status LED each 3 sec */
-    gptStart(&GPTD4, &gpt4cfg);
+    gptStart(&GPTD4, &bspGpt4cfg);
     gptStartContinuous(&GPTD4, 3000); /* 3000 / 1000 = trigger rate in seconds */
 
     return RV_SUCCESS;
