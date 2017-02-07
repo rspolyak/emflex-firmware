@@ -28,7 +28,11 @@
 #include "gsm_api.h"
 #include "control_api.h"
 #include "cli.h"
+
+#ifdef HAL_USE_DATA_EEPROM
 #include "data_eeprom.h"
+#endif /* HAL_USE_DATA_EEPROM */
+
 #include "accelGyro.h"
 #include "utils.h"
 #include "logging.h"
@@ -336,6 +340,8 @@ RV_t cliEventLogsOff(void)
 
 RV_t cliEventShowEeprom(void)
 {
+
+#ifdef HAL_USE_DATA_EEPROM
   uint8_t val = 0;
   uint32_t i = 1;
 
@@ -347,6 +353,7 @@ RV_t cliEventShowEeprom(void)
     i++;
   }
   LOG_TRACE(CLI_CMP, "======END LOG=====");
+#endif /* HAL_USE_DATA_EEPROM */
 
   return RV_SUCCESS;
 }

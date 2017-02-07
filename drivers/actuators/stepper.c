@@ -53,6 +53,7 @@ static adcsample_t samples[ADC_GRP_NUM_CHANNELS * ADC_GRP_BUF_DEPTH];
 /* ADC conversion group.
  * Mode:        Circular buffer, 1 samples of 1 channel, SW triggered.
  * Channels:    IN10 */
+#ifdef STM32L1XX_MD
 static const ADCConversionGroup adcgrpcfg = {
     TRUE,
     ADC_GRP_NUM_CHANNELS,
@@ -68,6 +69,9 @@ static const ADCConversionGroup adcgrpcfg = {
     0,                        /* SQR4 */
     ADC_SQR5_SQ1_N(ADC_CHANNEL_IN10)
 };
+#else
+static const ADCConversionGroup adcgrpcfg = {0};
+#endif /* STM32L1XX_MD */
 
 /* GPT2 callback. */
 static void gpt4cb(GPTDriver *gptp)

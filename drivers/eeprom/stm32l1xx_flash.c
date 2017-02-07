@@ -91,7 +91,7 @@
   *
   ******************************************************************************
   */
-
+#ifdef STM32L1XX_MD
 /* Includes ------------------------------------------------------------------*/
 #include "board.h"
 #include "stm32l1xx_flash.h"
@@ -1633,6 +1633,8 @@ FLASH_Status FLASH_WaitForLastOperation(uint32_t Timeout)
   /* Return the operation status */
   return status;
 }
+
+#endif /* STM32L1XX_MD */
 
 /**
   * @}

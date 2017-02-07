@@ -3,6 +3,7 @@
 
 #export TRG=ST_STM32VL_DISCOVERY
 export TRG=ST_STM32L_DISCOVERY
+#export TRG=ST_STM32F3_DISCOVERY
 #export TRG=gtrack
 
 export PROFILE=tracking
