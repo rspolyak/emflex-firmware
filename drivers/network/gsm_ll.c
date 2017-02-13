@@ -59,7 +59,7 @@ static struct
   float balance;
 } balance_s = {.state = false, .balance = 0.0};
 
-static THD_WORKING_AREA(gsmThread, 1024);
+static THD_WORKING_AREA(gsmThread, GSM_THREAD_STACK_SIZE);
 
 static bool gsm_is_ready = FALSE;
 static MUTEX_DECL(gsm_ready_mutex);
