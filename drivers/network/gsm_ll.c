@@ -41,7 +41,7 @@
 //#define GSM_ERROR_HANDLE
 
 /* Enables GSM low power mode */
-//#define GSM_SLEEP
+#define GSM_SLEEP
 
 gsmCbFunc_t gsmCbArray_g[GSM_EVENT_LAST];
 phoneBook_t phoneBook_g;
@@ -256,7 +256,7 @@ void gsmModuleCfg(void)
 
   //gsmCmdSend(GSM_PHONEBOOK_READ_ALL);
 
-  //gsmCmdSend(GSM_SLEEP_MODE_DTR);
+  gsmCmdSend(GSM_SLEEP_MODE_DTR);
 }
 
 void gsmModulePhoneNumberAdd(char* number, char* name)
@@ -694,9 +694,9 @@ static THD_FUNCTION(gsmTask, arg)
       if (res == MSG_OK)
       {
         cur_command.id++;
-#if GSM_SLEEP
+#ifdef GSM_SLEEP
         /* exit sleep mode. serial port will be active after about 50ms */
-        palClearPad(GPIOA, GPIOA_PIN2);
+        palClearPad(GPIOA, GPIOA_PIN6);
         chThdSleepMilliseconds(100);
 #endif
         LOG_TRACE(GSM_CMP, "Sending a command #%d:%s", cur_command.id, pBuf);
@@ -769,9 +769,9 @@ static THD_FUNCTION(gsmTask, arg)
 #endif
         /* allow next command to be dispatched to GSM module */
         cur_command.ack = true;
-#if GSM_SLEEP
+#ifdef GSM_SLEEP
         /* enter sleep mode */
-        palSetPad(GPIOA, GPIOA_PIN2);
+        palSetPad(GPIOA, GPIOA_PIN6);
 #endif
       }
       val = 0;
