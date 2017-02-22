@@ -285,12 +285,12 @@ static RV_t gsmModuleAsyncEventHandle(char *str)
   /* message content received*/
   else if (RV_SUCCESS == gsmCmpCommand(str, GSM_MSG_CMT))
   {
-    LOG_TRACE(GSM_CMP, "Rec sms: %s\r\n", str);
+    LOG_TRACE(GSM_CMP, "Rec sms: %s", str);
     gsmTaskCb(str);
   }
   else
   {
-    LOG_TRACE(GSM_CMP, "Rec event:%s\r\n", str);
+    LOG_TRACE(GSM_CMP, "Rec event:%s", str);
   }
 
   return RV_SUCCESS;
@@ -328,7 +328,7 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len, uint32_t *val)
     uint32_t resp = strnlen(buf, len);
     uint32_t data = buf[resp-1] - '0';
 
-    LOG_TRACE(GSM_CMP, "returned %s\r\n", buf);
+    LOG_TRACE(GSM_CMP, "returned %s", buf);
 
     if (data == 1)
     {
@@ -340,11 +340,11 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len, uint32_t *val)
   {
     if (RV_SUCCESS != gsmCallEventCb(GSM_EVENT_DOWN))
     {
-      LOG_TRACE(GSM_CMP,"Failed to power off GSM\r\n");
+      LOG_TRACE(GSM_CMP,"Failed to power off GSM");
       return RV_FAILURE;
     }
 
-    LOG_TRACE(GSM_CMP, "GSM IS DISABLED\r\n");
+    LOG_TRACE(GSM_CMP, "GSM IS DISABLED");
 
     gsmReady = false;
 
@@ -373,11 +373,11 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len, uint32_t *val)
 
     if (RV_SUCCESS != gsmCallEventCb(GSM_EVENT_POWER_LOW))
     {
-      LOG_TRACE(GSM_CMP,"Failed send under-voltage event\r\n");
+      LOG_TRACE(GSM_CMP,"Failed send under-voltage event");
       return RV_FAILURE;
     }
 
-    LOG_TRACE(GSM_CMP, "Received under-voltage event\r\n");
+    LOG_TRACE(GSM_CMP, "Received under-voltage event");
 
     return RV_SUCCESS;
   }
@@ -422,12 +422,12 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len, uint32_t *val)
 
     LOG_TRACE(GSM_CMP, "Battery discharge: %u", battery);
 
-    /* notify user after battery discharge level has reached 5% */
-    if (battery < 5)
+    /* notify user after battery discharge level has reached 3% */
+    if (battery < 3)
     {
       if (RV_SUCCESS != gsmCallEventCb(GSM_EVENT_POWER_LOW))
       {
-        LOG_TRACE(GSM_CMP,"Failed send under-voltage event\r\n");
+        LOG_TRACE(GSM_CMP,"Failed send low battery event\r\n");
         return RV_FAILURE;
       }
     }
@@ -779,7 +779,7 @@ static THD_FUNCTION(gsmTask, arg)
 
     /* detect low battery voltage level */
     currTime = logTimeStampGet();
-    if ((currTime - time) >= 15)
+    if ((currTime - time) >= 30)
     {
       time = currTime;
       gsmCmdSend(GSM_BATTERY_DISCHARGE);
@@ -807,8 +807,7 @@ RV_t gsmTaskInit(void)
   strncpy(phoneBook_g.resp_number, "+380982297151", sizeof(phoneBook_g.resp_number));
 
   /* add predefined phone number to allow out-of-box configuration */
-  char number[] = "+380982297151";
-  gsmPhoneNumberAdd(number);
+  gsmPhoneNumberAdd("+380982297151");
 
   return RV_SUCCESS;
 }
