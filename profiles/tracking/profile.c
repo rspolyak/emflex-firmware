@@ -59,13 +59,14 @@ typedef enum
 static RV_t ctrlGsmEventUpProcess(void);
 static RV_t ctrlGsmEventDownProcess(void);
 static RV_t ctrlGsmEventBalanceProcess(void);
-static RV_t ctrlGsmEventSmsStartProcess(void);
 static RV_t ctrlGsmEventSmsStopProcess(void);
 static RV_t ctrlGsmEventSmsStateProcess(void);
 static RV_t ctrlImuEventAlarmProcess(void);
 static RV_t ctrlVoltageEventAlarmProcess(void);
 static RV_t ctrlGsmStateSend(void);
 static RV_t underVoltageProcess(void);
+
+RV_t ctrlGsmEventSmsStartProcess(void);
 
 RV_t doStateIdle(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
 {
@@ -85,7 +86,7 @@ RV_t doStateIdle(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
 
       LOG_TRACE(CONTROL_CMP, "x=%f y=%f", dof.x, dof.y);
 
-      imuThresholdSet(dof, 0.5);
+      imuThresholdSet(dof, 1);
       imuEnable();
 
       if (RV_SUCCESS != gsmSmsSend("ARM\r\n"))
@@ -359,7 +360,7 @@ static RV_t ctrlGsmEventBalanceProcess(void)
   return ctrlEventPost(BALANCE_EVENT);
 }
 
-static RV_t ctrlGsmEventSmsStartProcess(void)
+RV_t ctrlGsmEventSmsStartProcess(void)
 {
   return ctrlEventPost(START_EVENT);
 }
