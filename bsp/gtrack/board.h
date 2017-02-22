@@ -266,7 +266,7 @@
                                      PIN_ODR_LOW(GPIOA_PIN3)  |             \
                                      PIN_ODR_HIGH(GPIOA_PIN4) |             \
                                      PIN_ODR_HIGH(GPIOA_PIN5) |             \
-                                     PIN_ODR_LOW(GPIOA_PIN6) |             \
+                                     PIN_ODR_HIGH(GPIOA_PIN6) |             \
                                      PIN_ODR_LOW(GPIOA_PIN7) |             \
                                      PIN_ODR_HIGH(GPIOA_PIN8) |             \
                                      PIN_ODR_HIGH(GPIOA_PIN9) |             \

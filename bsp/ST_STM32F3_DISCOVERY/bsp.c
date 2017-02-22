@@ -49,14 +49,14 @@ RV_t bspRegisterEventCb(bsp_event_t ev, bsp_cb_t cb)
   return RV_SUCCESS;
 }
 
-void gsmPowerOnOff(void)
+void bspGsmPowerOnOff(void)
 {
 }
 
-void systemPowerOn(void)
+void bspSystemPowerOn(void)
 {
 }
 
-void systemPowerOff(void)
+void gsmSystemPowerOff(void)
 {
 }

@@ -33,6 +33,8 @@
  */
 #define GSM_SERIAL_SPEED    19200
 
+#define GSM_THREAD_STACK_SIZE   1536
+
 #define MED_BUF_LEN 64
 #define GSM_SMS_INTERNAL_BLOCKS 3
 
