@@ -39,15 +39,16 @@ int main(void)
   halInit();
   chSysInit();
 
-  /* Init console UART*/
-  serialInit(CLI_SERIAL_SPEED, &CLI_SERIAL_PORT);
-
   /* platform specific initialization code */
   bspInit();
+
+  /* Init console UART*/
+  serialInit(CLI_SERIAL_SPEED, &CLI_SERIAL_PORT);
 
   /* component initialization */
   cnfgrInit();
   cnfgrRegister("CLI", cliInit);
+
   cnfgrRegister("Logging", loggingAppInit);
 
   profileInit();
