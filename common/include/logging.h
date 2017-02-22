@@ -28,11 +28,7 @@ RV_t loggingAppInit(void);
 
 void logEvent(const char *msg, ...);
 
-#ifndef DISABLE_LOGS
 #define DEBUG
-#else
-#undef DEBUG
-#endif
 
 #ifdef DEBUG
 #define LOG_TRACE(cmp, msg, ...)                                           \
@@ -45,3 +41,4 @@ void logEvent(const char *msg, ...);
    logEvent("ERROR: %s(%u): " msg "\r\n", __FUNCTION__, __LINE__, ##__VA_ARGS__);
 
 #endif
+

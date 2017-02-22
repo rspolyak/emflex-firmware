@@ -49,9 +49,7 @@ int main(void)
   cnfgrInit();
   cnfgrRegister("CLI", cliInit);
 
-#ifndef DISABLE_LOGS
   cnfgrRegister("Logging", loggingAppInit);
-#endif
 
   profileInit();
 
