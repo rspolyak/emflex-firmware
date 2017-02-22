@@ -41,7 +41,7 @@
 #define STM32_LSI_ENABLED                   TRUE
 #define STM32_HSE_ENABLED                   FALSE
 #define STM32_LSE_ENABLED                   FALSE
-#define STM32_ADC_CLOCK_ENABLED             TRUE
+#define STM32_ADC_CLOCK_ENABLED             FALSE
 #define STM32_USB_CLOCK_ENABLED             FALSE
 #define STM32_MSIRANGE                      STM32_MSIRANGE_2M
 #define STM32_SW                            STM32_SW_PLL
@@ -62,7 +62,7 @@
 /*
  * ADC driver system settings.
  */
-#define STM32_ADC_USE_ADC1                  TRUE
+#define STM32_ADC_USE_ADC1                  FALSE
 #define STM32_ADC_ADC1_DMA_PRIORITY         2
 #define STM32_ADC_IRQ_PRIORITY              6
 #define STM32_ADC_ADC1_DMA_IRQ_PRIORITY     6

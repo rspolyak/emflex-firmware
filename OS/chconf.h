@@ -219,7 +219,7 @@
  *
  * @note    The default is @p TRUE.
  */
-#define CH_CFG_USE_EVENTS                   TRUE
+#define CH_CFG_USE_EVENTS                   FALSE
 
 /**
  * @brief   Events Flags APIs with timeout.
@@ -229,7 +229,7 @@
  * @note    The default is @p TRUE.
  * @note    Requires @p CH_CFG_USE_EVENTS.
  */
-#define CH_CFG_USE_EVENTS_TIMEOUT           TRUE
+#define CH_CFG_USE_EVENTS_TIMEOUT           FALSE
 
 /**
  * @brief   Synchronous Messages APIs.
@@ -238,7 +238,7 @@
  *
  * @note    The default is @p TRUE.
  */
-#define CH_CFG_USE_MESSAGES                 TRUE
+#define CH_CFG_USE_MESSAGES                 FALSE
 
 /**
  * @brief   Synchronous Messages queuing mode.
@@ -308,7 +308,7 @@
  * @note    Requires @p CH_CFG_USE_WAITEXIT.
  * @note    Requires @p CH_CFG_USE_HEAP and/or @p CH_CFG_USE_MEMPOOLS.
  */
-#define CH_CFG_USE_DYNAMIC                  TRUE
+#define CH_CFG_USE_DYNAMIC                  FALSE
 
 /** @} */
 
