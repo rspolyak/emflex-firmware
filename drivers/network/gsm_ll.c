@@ -237,11 +237,11 @@ void gsmModuleSendGetHttpRequest(uint8_t signal, uint8_t battery)
 
     STRCAT_SAFE(buf, temp);
 
-    osapiItoa(signal, temp, sizeof(temp));
+    osapiItoa(battery, temp, sizeof(temp));
     STRCAT_SAFE(buf, "bat=");
     STRCAT_SAFE(buf, temp);
 
-    osapiItoa(battery, temp, sizeof(temp));
+    osapiItoa(signal, temp, sizeof(temp));
     STRCAT_SAFE(buf, "&sig=");
     STRCAT_SAFE(buf, temp);
 
