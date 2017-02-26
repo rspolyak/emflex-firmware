@@ -19,6 +19,8 @@
 ******************************************************************************
  */
 
+#ifdef HAL_USE_DATA_EEPROM
+
 #include "ch.h"
 #include "hal.h"
 #include "data_eeprom.h"
@@ -89,6 +91,6 @@ const struct BaseSequentialStreamVMT vmt = {.write=eeprom_writet, .read=eeprom_r
 EepromSequentialStream EEPROM = {.vmt = &vmt, .idx = 0, .startAddr = EEPROM_START};
 
 
-// #endif /* HAL_USE_DATA_EEPROM */
+#endif /* HAL_USE_DATA_EEPROM */
 
 /** @} */

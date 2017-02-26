@@ -43,9 +43,9 @@ extern void bspSystemPowerOff(void);
 /**
  * @brief   CLI serial port.
  * @note    Allowed values are SD1, SD2 or SD3.
- * @note    SD1 (PA9 - TX, PA10 - RX)
+ * @note    SD3 (PB10 - TX, PB11 - RX)
  */
-#define CLI_SERIAL_PORT     SD1
+#define CLI_SERIAL_PORT     SD3
 
 /**
  * @brief   GPS serial port.
@@ -57,20 +57,30 @@ extern void bspSystemPowerOff(void);
 /**
  * @brief   WIFI serial port.
  * @note    Allowed values are SD1, SD2 or SD3.
- * @note    SD3 (PB10 - TX, PB11 - RX)
+ * @note    SD1 (PA9 - TX, PA10 - RX)
  */
-#define WIFI_SERIAL_PORT     SD3
+#define WIFI_SERIAL_PORT     SD1
+
+/**
+ * @brief   CLI serial port.
+ * @note    Allowed values are SD1, SD2 or SD3.
+ * @note    SD1 (PA9 - TX, PA10 - RX)
+ */
+#define GSM_SERIAL_PORT     SD1
+
+#define GSM_TASK_STACK_SIZE 1024
 
 #define GPS_TASK_STACK_SIZE 512
 
-#define CTRL_TASK_STACK_SIZE 512
+#define CTRL_TASK_STACK_SIZE 1024
 
-#define LOGGING_THREAD_STACK_SIZE 512
+#define LOGGING_THREAD_STACK_SIZE 1024
 
-#define CLI_THREAD_STACK_SIZE 512
+#define CLI_THREAD_STACK_SIZE 1024
 
-#define ACCEL_THREAD_STACK_SIZE 512
+#define ACCEL_THREAD_STACK_SIZE 1024
 
+#define WIFI_TASK_STACK_SIZE 512
 
 #endif /* BSP */
 

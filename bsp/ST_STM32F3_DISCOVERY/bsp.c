@@ -1,8 +1,11 @@
 /*****************************************************************************
-* File:       i2c.c
+* File:        bsp.c
 *
-* Created on: Aug 21, 2015
-* Author:     rostokus
+* Created on:  Dec 27, 2015
+*
+* Description: platform specific routines for Discovery PCB
+*
+* Author:      rostokus
 ******************************************************************************
 
   This library is free software; you can redistribute it and/or
@@ -18,38 +21,42 @@
 ******************************************************************************
  */
 
-#include <string.h>
-#include <ctype.h>
 #include "ch.h"
 #include "hal.h"
 #include "chprintf.h"
 #include "common.h"
-#include "logging.h"
+#include "bsp.h"
 
-#if defined STM32L1XX_MD || defined STM32F10X_MD_VL 
-const I2CConfig i2cCfg =
+RV_t bspInit(void)
 {
-  OPMODE_I2C,
-  100000,
-  STD_DUTY_CYCLE
-};
-#endif
+  /* Activates the UART driver for debugging,
+   * PB10 and PB11 are routed to USART3. */
+  palSetPadMode(GPIOB, 10, PAL_MODE_ALTERNATE(7));
+  palSetPadMode(GPIOB, 11, PAL_MODE_ALTERNATE(7));
 
-#if defined STM32F303xC
-static const I2CConfig i2cCfg = {
-  STM32_TIMINGR_PRESC(15U) |
-  STM32_TIMINGR_SCLDEL(4U) | STM32_TIMINGR_SDADEL(2U) |
-  STM32_TIMINGR_SCLH(15U)  | STM32_TIMINGR_SCLL(21U),
-  0,
-  0
-};
-#endif
+  /* Activates GSM module pins */
+  palSetPadMode(GPIOA, 9, PAL_MODE_ALTERNATE(7));
+  palSetPadMode(GPIOA, 10, PAL_MODE_ALTERNATE(7));
 
-void i2cDrvInit(void)
-{
-  palSetPadMode(GPIOB, 8, PAL_MODE_ALTERNATE(4) | PAL_STM32_OTYPE_OPENDRAIN); //SCL
-  palSetPadMode(GPIOB, 9, PAL_MODE_ALTERNATE(4) | PAL_STM32_OTYPE_OPENDRAIN); //SCA
-
-  i2cStart(&I2CD1, &i2cCfg);
+  return RV_SUCCESS;
 }
 
+RV_t bspRegisterEventCb(bsp_event_t ev, bsp_cb_t cb)
+{
+  (void) ev;
+  (void) cb;
+
+  return RV_SUCCESS;
+}
+
+void bspGsmPowerOnOff(void)
+{
+}
+
+void bspSystemPowerOn(void)
+{
+}
+
+void gsmSystemPowerOff(void)
+{
+}
