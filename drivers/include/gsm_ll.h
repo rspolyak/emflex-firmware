@@ -94,7 +94,9 @@
 #define GSM_ENABLE_HTTP_SERVICE "AT+HTTPINIT\r"
 
 #define GSM_HTTP_SET_BEARER_PROFILE_ID "AT+HTTPPARA=\"CID\",1\r"
-#define GSM_HTTP_SET_URL "AT+HTTPPARA=\"URL\",\"heroku-cartracker.herokuapp.com/?id=552&name=Test2\"\r"
+#define GSM_HTTP_SET_SSL "AT+HTTPSSL=1\r"
+//#define GSM_HTTP_SET_URL "AT+HTTPPARA=\"URL\",\"heroku-cartracker.herokuapp.com/?id=552&name=Test2\"\r"
+#define GSM_HTTP_SET_URL "AT+HTTPPARA=\"URL\",\"https://dweet.io/dweet/for/emflex?"
 #define GSM_HTTP_SET_GET_METHOD "AT+HTTPACTION=0\r"
 #define GSM_HTTP_READ_DATA "AT+HTTPREAD=0,1000\r"
 

@@ -32,7 +32,7 @@ extern RV_t gsmStateReqSend(void);
 extern RV_t gsmStateReqGet(uint32_t *sign, uint32_t *batt, char *bal, uint32_t len);
 extern void gsmModulePhoneNumberAdd(char* number, char* name);
 extern RV_t gsmATCmdSend(const char *buf, uint32_t len);
-void gsmModuleSendGetHttpRequest(void);
+void gsmModuleSendGetHttpRequest(uint8_t signal, uint8_t battery);
 
 #endif
 

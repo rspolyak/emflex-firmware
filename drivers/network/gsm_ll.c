@@ -36,8 +36,6 @@
 #include "bsp.h"
 #include "serial_port.h"
 
-#define GPRS_ENABLED
-
 /* Handle errors returned by GSM module,
  * like out of balance, network unreachable */
 //#define GSM_ERROR_HANDLE
@@ -214,7 +212,6 @@ void gsmModuleConnectGprs(void)
 {
     LOG_TRACE(GSM_CMP, "Configure GPRS ...\r\n");
 
-#ifdef GPRS_ENABLED
     gsmCmdSend(GSM_CHECK_SYGNAL_GPRS);
     gsmCmdSend(GSM_CHECK_GPRS_NETWORK);
     gsmCmdSend(GSM_ATTACH_GPRS_NETWORK);
@@ -223,32 +220,38 @@ void gsmModuleConnectGprs(void)
     gsmCmdSend(GSM_GPRS_CONNECT);
     gsmCmdSend(GSM_GPRS_CHECK);
     gsmCmdSend(GSM_ENABLE_HTTP_SERVICE);
-#endif
 }
 
 void gsmModuleDisconnectGprs(void)
 {
     LOG_TRACE(GSM_CMP, "Disconnect from GPRS...\r\n");
 
-#ifdef GPRS_ENABLED
     gsmCmdSend(GSM_DISABLE_HTTP_SERVICE);
     gsmCmdSend(GSM_GPRS_DISCONNECT);
-#endif
 }
 
-void gsmModuleSendGetHttpRequest(void)
+void gsmModuleSendGetHttpRequest(uint8_t signal, uint8_t battery)
 {
-    gsmModuleConnectGprs();
+    char buf[96] = GSM_HTTP_SET_URL;
+    char temp[32] = {0};
 
-#ifdef GPRS_ENABLED
+    STRCAT_SAFE(buf, temp);
+
+    osapiItoa(signal, temp, sizeof(temp));
+    STRCAT_SAFE(buf, "bat=");
+    STRCAT_SAFE(buf, temp);
+
+    osapiItoa(battery, temp, sizeof(temp));
+    STRCAT_SAFE(buf, "&sig=");
+    STRCAT_SAFE(buf, temp);
+
+    STRCAT_SAFE(buf, "\"\r");
+
     gsmCmdSend(GSM_HTTP_SET_BEARER_PROFILE_ID);
-    gsmCmdSend(GSM_HTTP_SET_URL);
+    gsmCmdSend(GSM_HTTP_SET_SSL);
+    gsmCmdSend(buf);
     gsmCmdSend(GSM_HTTP_SET_GET_METHOD);
     gsmCmdSend(GSM_HTTP_READ_DATA);
-#endif
-
-    gsmModuleDisconnectGprs();
-
 }
 
 void gsmModuleCfg(void)
@@ -262,6 +265,8 @@ void gsmModuleCfg(void)
   gsmCmdSend(GSM_LEGACY_SMS_CLEAR);
 
   //gsmCmdSend(GSM_PHONEBOOK_READ_ALL);
+
+  gsmModuleConnectGprs();
 
   gsmCmdSend(GSM_SLEEP_MODE_DTR);
 }

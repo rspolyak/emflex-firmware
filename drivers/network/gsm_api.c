@@ -59,7 +59,6 @@ RV_t gsmInit(void)
 /* Send sms to gsm module */
 RV_t gsmSmsSend(const char* smsStr)
 {
-#ifdef TBD
   if (smsStr == 0)
   {
     return RV_FAILURE;
@@ -72,8 +71,6 @@ RV_t gsmSmsSend(const char* smsStr)
   }
 
   return gsmSendSmsToNumber(phoneBook_g.resp_number, smsStr);
-#endif
-  return RV_SUCCESS;
 }
 
 /* Call a number */

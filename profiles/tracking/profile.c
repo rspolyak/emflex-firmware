@@ -170,8 +170,6 @@ RV_t doStateActive(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
         LOG_TRACE(CONTROL_CMP,"Sms msg send failed!");
       }
 
-      gsmModuleSendGetHttpRequest();
-
       break;
 
     case STATE_EVENT:
@@ -415,6 +413,8 @@ static RV_t ctrlGsmStateSend()
       LOG_TRACE(CONTROL_CMP,"Failed to send GSM state!");
       return RV_FAILURE;
     }
+
+    gsmModuleSendGetHttpRequest(signal, battery);
   }
   else
   {
