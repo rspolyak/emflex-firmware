@@ -22,13 +22,6 @@
 #define GSM_LL
 
 /**
- * @brief   CLI serial port.
- * @note    Allowed values are SD1, SD2 or SD3.
- * @note    SD1 (PA9 - TX, PA10 - RX)
- */
-#define GSM_SERIAL_PORT     SD1
-
-/**
  * @brief   CLI serial speed.
  */
 #define GSM_SERIAL_SPEED    19200
@@ -95,13 +88,15 @@
 #define GSM_CHECK_GPRS_NETWORK "AT+CGATT?\r"
 #define GSM_ATTACH_GPRS_NETWORK "AT+CGATT=1\r"
 #define GSM_CONTYPE_GPRS "AT+SAPBR=3,1,\"CONTYPE\",\"GPRS\"\r"
-#define GSM_CONTYPE_APN "AT+SAPBR=3,1,\"APN\",\"www.kyivstar.net\"\r"
+#define GSM_CONTYPE_APN "AT+SAPBR=3,1,\"APN\",\"internet\"\r"
 #define GSM_GPRS_CONNECT "AT+SAPBR=1,1\r"
 #define GSM_GPRS_CHECK "AT+SAPBR=2,1\r"
 #define GSM_ENABLE_HTTP_SERVICE "AT+HTTPINIT\r"
 
 #define GSM_HTTP_SET_BEARER_PROFILE_ID "AT+HTTPPARA=\"CID\",1\r"
-#define GSM_HTTP_SET_URL "AT+HTTPPARA=\"URL\",\"heroku-cartracker.herokuapp.com/?id=552&name=Test2\"\r"
+#define GSM_HTTP_SET_SSL "AT+HTTPSSL=1\r"
+//#define GSM_HTTP_SET_URL "AT+HTTPPARA=\"URL\",\"heroku-cartracker.herokuapp.com/?id=552&name=Test2\"\r"
+#define GSM_HTTP_SET_URL "AT+HTTPPARA=\"URL\",\"https://dweet.io/dweet/for/emflex?"
 #define GSM_HTTP_SET_GET_METHOD "AT+HTTPACTION=0\r"
 #define GSM_HTTP_READ_DATA "AT+HTTPREAD=0,1000\r"
 

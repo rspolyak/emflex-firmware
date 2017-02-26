@@ -212,7 +212,6 @@ void gsmModuleConnectGprs(void)
 {
     LOG_TRACE(GSM_CMP, "Configure GPRS ...\r\n");
 
-#ifdef GPRS_ENABLED
     gsmCmdSend(GSM_CHECK_SYGNAL_GPRS);
     gsmCmdSend(GSM_CHECK_GPRS_NETWORK);
     gsmCmdSend(GSM_ATTACH_GPRS_NETWORK);
@@ -221,27 +220,38 @@ void gsmModuleConnectGprs(void)
     gsmCmdSend(GSM_GPRS_CONNECT);
     gsmCmdSend(GSM_GPRS_CHECK);
     gsmCmdSend(GSM_ENABLE_HTTP_SERVICE);
-#endif
 }
 
 void gsmModuleDisconnectGprs(void)
 {
     LOG_TRACE(GSM_CMP, "Disconnect from GPRS...\r\n");
 
-#ifdef GPRS_ENABLED
     gsmCmdSend(GSM_DISABLE_HTTP_SERVICE);
     gsmCmdSend(GSM_GPRS_DISCONNECT);
-#endif
 }
 
-void gsmModuleSendGetHttpRequest(void)
+void gsmModuleSendGetHttpRequest(uint8_t signal, uint8_t battery)
 {
-#ifdef GPRS_ENABLED
+    char buf[96] = GSM_HTTP_SET_URL;
+    char temp[32] = {0};
+
+    STRCAT_SAFE(buf, temp);
+
+    osapiItoa(signal, temp, sizeof(temp));
+    STRCAT_SAFE(buf, "bat=");
+    STRCAT_SAFE(buf, temp);
+
+    osapiItoa(battery, temp, sizeof(temp));
+    STRCAT_SAFE(buf, "&sig=");
+    STRCAT_SAFE(buf, temp);
+
+    STRCAT_SAFE(buf, "\"\r");
+
     gsmCmdSend(GSM_HTTP_SET_BEARER_PROFILE_ID);
-    gsmCmdSend(GSM_HTTP_SET_URL);
+    gsmCmdSend(GSM_HTTP_SET_SSL);
+    gsmCmdSend(buf);
     gsmCmdSend(GSM_HTTP_SET_GET_METHOD);
     gsmCmdSend(GSM_HTTP_READ_DATA);
-#endif
 }
 
 void gsmModuleCfg(void)
@@ -255,6 +265,8 @@ void gsmModuleCfg(void)
   gsmCmdSend(GSM_LEGACY_SMS_CLEAR);
 
   //gsmCmdSend(GSM_PHONEBOOK_READ_ALL);
+
+  gsmModuleConnectGprs();
 
   gsmCmdSend(GSM_SLEEP_MODE_DTR);
 }
@@ -789,6 +801,8 @@ static THD_FUNCTION(gsmTask, arg)
 
 RV_t gsmTaskInit(void)
 {
+  char number[] = "+380676708491";
+
   /* create message queue to send asynchronous requests */
   chMBObjectInit(&gsm_tx_mb_s, gsm_tx_msg_queue_s, MAILBOX_QUEUE_TX_SIZE);
 
@@ -804,10 +818,9 @@ RV_t gsmTaskInit(void)
   memset(&phoneBook_g, 0, sizeof(phoneBook_g));
 
   phoneBook_g.resp_is_set = TRUE;
-  strncpy(phoneBook_g.resp_number, "+380982297151", sizeof(phoneBook_g.resp_number));
+  strncpy(phoneBook_g.resp_number, number, sizeof(phoneBook_g.resp_number));
 
   /* add predefined phone number to allow out-of-box configuration */
-  char number[] = "+380982297151";
   gsmPhoneNumberAdd(number);
 
   return RV_SUCCESS;

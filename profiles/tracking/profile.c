@@ -413,6 +413,8 @@ static RV_t ctrlGsmStateSend()
       LOG_TRACE(CONTROL_CMP,"Failed to send GSM state!");
       return RV_FAILURE;
     }
+
+    gsmModuleSendGetHttpRequest(signal, battery);
   }
   else
   {
