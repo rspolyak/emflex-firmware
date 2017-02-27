@@ -414,6 +414,7 @@ static RV_t ctrlGsmStateSend()
       return RV_FAILURE;
     }
 
+    gsmModuleConnectGprs();
     gsmModuleSendGetHttpRequest(signal, battery);
   }
   else
