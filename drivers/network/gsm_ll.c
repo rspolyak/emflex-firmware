@@ -266,8 +266,6 @@ void gsmModuleCfg(void)
 
   //gsmCmdSend(GSM_PHONEBOOK_READ_ALL);
 
-  gsmModuleConnectGprs();
-
   gsmCmdSend(GSM_SLEEP_MODE_DTR);
 }
 
@@ -330,8 +328,6 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len, uint32_t *val)
     cur_command.ack = true;
 
     gsmReadySet();
-
-    //gsmModuleConnectGprs();
 
     return RV_SUCCESS;
   }
