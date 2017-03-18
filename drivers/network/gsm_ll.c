@@ -256,8 +256,8 @@ void gsmModuleSendGetHttpRequest(uint8_t signal, uint8_t battery)
 
 void gsmModuleCfg(void)
 {
-  gsmCmdSend(GSM_ECHO_DISABLE);
   gsmCmdSend(GSM_FIXED_BAUDRATE);
+  gsmCmdSend(GSM_ECHO_DISABLE);  
   gsmCmdSend(GSM_TA_RESPONSE_FORMAT_ENABLE);
   gsmCmdSend(GSM_SMS_TEXT_MESSAGE_FORMAT);
   gsmCmdSend(GSM_NEW_SMS_MESSAGE_INDICATION);
@@ -455,6 +455,11 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len, uint32_t *val)
     LOG_TRACE(GSM_CMP, "Signal level: %u", signal);
 
     return RV_SUCCESS;
+  }
+  /* New voice call */
+  else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_NO_CARRIER))
+  {
+    return gsmCallEventCb(GSM_EVENT_VOICE_CALL);
   }
 #if 0
   else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_PHONE_BOOK_READ_MATCH_STR))
@@ -874,39 +879,36 @@ bool gsmReadyCheck(void)
 
 RV_t gsmModuleInit()
 {
-    uint32_t count = 0;
+  uint32_t count = 0;
 
-    /* Check whether GSM module is already running.
-     * Send test command and wait for GSM reply.
-     */
-    if (RV_SUCCESS != gsmModuleCmdSend(GSM_MODULE_MODEL_GET))
+  /* Check whether GSM module is already running.
+   * Send test command and wait for GSM reply. */
+  if (RV_SUCCESS != gsmModuleCmdSend(GSM_MODULE_MODEL_GET))
+  {
+    return RV_FAILURE;
+  }
+
+  /* add 1 sec delay */
+  while (count < 10)
+  {
+    chThdSleepMilliseconds(100);
+    if (gsmReady == true)
     {
-      return RV_FAILURE;
+      return RV_SUCCESS;
     }
 
-    /* add 1 sec delay */
-    while (count < 10)
-    {
-      chThdSleepMilliseconds(100);
+    count++;
+  }
 
-      if (gsmReady == true)
-      {
-        return RV_SUCCESS;
-      }
+  /* If GSM module does not respond within timeout,
+   * proceed to switch it on */
+  bspGsmPowerOnOff();
 
-      count++;
-    }
+  /* block on cond var until received "Call Ready" from GSM */
+  gsmReadyGet();
 
-    /* If GSM module does not response within timeout,
-     * proceed to switch it on.
-     */
-    bspGsmPowerOnOff();
-
-    /* block on cond var until received "Call Ready" from GSM */
-    gsmReadyGet();
-
-    /* GSM is ready to be configured. Send initialization commands */
-    gsmModuleCfg();
+  /* GSM is ready to be configured. Send initialization commands */
+  gsmModuleCfg();
 
   return RV_SUCCESS;
 }

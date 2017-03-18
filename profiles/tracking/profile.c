@@ -66,6 +66,7 @@ static RV_t ctrlImuEventAlarmProcess(void);
 static RV_t ctrlVoltageEventAlarmProcess(void);
 static RV_t ctrlGsmStateSend(void);
 static RV_t underVoltageProcess(void);
+static RV_t gsmVoiceCallHandle(void);
 
 RV_t doStateIdle(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
 {
@@ -451,6 +452,24 @@ static RV_t underVoltageProcess(void)
   return RV_SUCCESS;
 }
 
+RV_t gsmVoiceCallHandle(void)
+{
+  static BOOL startCmd = RV_FALSE;
+
+  if (startCmd == RV_FALSE)
+  {
+    gsmCallEventCb(GSM_EVENT_SMS_START);
+    startCmd = RV_TRUE;
+  }
+  else
+  {
+    gsmCallEventCb(GSM_EVENT_SMS_STOP);
+    startCmd = RV_FALSE;
+  }
+
+  return RV_SUCCESS;
+}
+
 void profileInit(void)
 {
   ctrlStateInitStateSet(IDLE_STATE);
@@ -475,6 +494,7 @@ void profileInit(void)
   gsmRegisterEventCb(GSM_EVENT_SMS_STATE, ctrlGsmEventSmsStateProcess);
   gsmRegisterEventCb(GSM_EVENT_BALANCE_SIGN_BATT, ctrlGsmEventBalanceProcess);
   gsmRegisterEventCb(GSM_EVENT_POWER_LOW, ctrlVoltageEventAlarmProcess);
+  gsmRegisterEventCb(GSM_EVENT_VOICE_CALL, gsmVoiceCallHandle);
 
   imuRegisterEventCb(IMU_EVENT_ALARM, ctrlImuEventAlarmProcess);
 

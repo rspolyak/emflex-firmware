@@ -58,6 +58,7 @@
 #define GSM_PHONE_BOOK_READ_MATCH_STR   "+CPBR"
 #define GSM_MODULE_MODEL_GET    "AT+GSV\r"
 #define GSM_MODULE_VENDOR_NAME  "SIMCOM"
+#define GSM_NO_CARRIER          "NO CARRIER"
 
 #define GSM_CARRET_RETURN       "\r"
 #define GSM_ECHO_ENABLE         "ATE1\r"
