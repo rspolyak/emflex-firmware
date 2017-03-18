@@ -86,7 +86,7 @@ RV_t doStateIdle(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
 
       LOG_TRACE(CONTROL_CMP, "x=%f y=%f", dof.x, dof.y);
 
-      imuThresholdSet(dof, 0.5);
+      imuThresholdSet(dof, 1.0);
       imuEnable();
 
       if (RV_SUCCESS != gsmSmsSend("ARM\r\n"))
