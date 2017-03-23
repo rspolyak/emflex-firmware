@@ -94,6 +94,24 @@ RV_t gsmRegisterEventCb(gsmEvent_t event, gsmCbFunc_t cb)
   return RV_SUCCESS;
 }
 
+RV_t gsmVoiceCallHandle(void)
+{
+  static BOOL startCmd = RV_FALSE;
+
+  if (startCmd == RV_FALSE)
+  {
+    gsmCallEventCb(GSM_EVENT_SMS_START);
+    startCmd = RV_TRUE;
+  }
+  else
+  {
+    gsmCallEventCb(GSM_EVENT_SMS_STOP);
+    startCmd = RV_FALSE;
+  }
+
+  return RV_SUCCESS;
+}
+
 RV_t gsmStateReqSend(void)
 {
   if (RV_SUCCESS == gsmCmdSend(GSM_SIGNAL_LEVEL) &&

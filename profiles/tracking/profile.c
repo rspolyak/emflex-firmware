@@ -37,6 +37,8 @@
 #include "utils.h"
 #include "logging.h"
 
+const uint8_t gImuThresholdInDegrees = 1.0;
+
 typedef enum
 {
   START_EVENT = 0,
@@ -66,7 +68,6 @@ static RV_t ctrlImuEventAlarmProcess(void);
 static RV_t ctrlVoltageEventAlarmProcess(void);
 static RV_t ctrlGsmStateSend(void);
 static RV_t underVoltageProcess(void);
-static RV_t gsmVoiceCallHandle(void);
 
 RV_t doStateIdle(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
 {
@@ -86,7 +87,7 @@ RV_t doStateIdle(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
 
       LOG_TRACE(CONTROL_CMP, "x=%f y=%f", dof.x, dof.y);
 
-      imuThresholdSet(dof, 0.5);
+      imuThresholdSet(dof, gImuThresholdInDegrees);
       imuEnable();
 
       if (RV_SUCCESS != gsmSmsSend("ARM\r\n"))
@@ -448,24 +449,6 @@ static RV_t underVoltageProcess(void)
 
   /* switch off device */
   bspSystemPowerOff();
-
-  return RV_SUCCESS;
-}
-
-RV_t gsmVoiceCallHandle(void)
-{
-  static BOOL startCmd = RV_FALSE;
-
-  if (startCmd == RV_FALSE)
-  {
-    gsmCallEventCb(GSM_EVENT_SMS_START);
-    startCmd = RV_TRUE;
-  }
-  else
-  {
-    gsmCallEventCb(GSM_EVENT_SMS_STOP);
-    startCmd = RV_FALSE;
-  }
 
   return RV_SUCCESS;
 }
