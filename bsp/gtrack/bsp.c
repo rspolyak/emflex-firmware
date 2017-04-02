@@ -133,21 +133,48 @@ RV_t bspInit(void)
   return RV_SUCCESS;
 }
 
-/* GPT4 callback. */
-static void bspGpt4cb(GPTDriver *gptp)
+/* GPT4 error callback. */
+static void bspGpt4ErrorCb(GPTDriver *gptp)
 {
   (void) gptp;
 
   palTogglePad(GPIOC, 6);
 }
 
-/* GPT4 configuration. */
-static const GPTConfig bspGpt4cfg = {
-  1000,    /* 1kHz timer clock.*/
-  bspGpt4cb,    /* Timer callback.*/
+/* GPT4 error configuration. */
+static const GPTConfig bspGpt4ErrorCfg = {
+  1000,         /* 1kHz timer clock.*/
+  bspGpt4ErrorCb,    /* Timer callback.*/
   0,
   0
 };
+
+/* GPT4 initial callback. */
+static void bspGpt4InitalCb(GPTDriver *gptp)
+{
+  (void) gptp;
+
+  palSetPad(GPIOC, 6);
+  for (uint32_t i = 0; i < 100; i++)
+      ;
+  palClearPad(GPIOC, 6);
+}
+
+/* GPT4 initial configuration. */
+static const GPTConfig bspGpt4InitialCfg = {
+  1000,         /* 1kHz timer clock.*/
+  bspGpt4InitalCb,    /* Timer callback.*/
+  0,
+  0
+};
+
+static RV_t bspStartTimer10Sec(void)
+{
+  gptStart(&GPTD4, &bspGpt4InitialCfg);
+  gptStartContinuous(&GPTD4, 10000);
+
+  return RV_SUCCESS;
+}
 
 RV_t bspInitComplete(void)
 {
@@ -158,9 +185,27 @@ RV_t bspInitComplete(void)
     extChannelEnable(&EXTD1, BSP_PWR_OFF_CHANNEL);
 
     /* Display normal device activity.
-     * Blink status LED each 3 sec */
-    gptStart(&GPTD4, &bspGpt4cfg);
-    gptStartContinuous(&GPTD4, 3000); /* 3000 / 1000 = trigger rate in seconds */
+     * Blink status LED each 10 sec */
+    bspStartTimer10Sec();
 
     return RV_SUCCESS;
+}
+
+RV_t bspIndicateError(uint32_t blinkTime)
+{
+  gptStopTimer(&GPTD4);
+
+  gptStart(&GPTD4, &bspGpt4ErrorCfg);
+  gptStartContinuous(&GPTD4, blinkTime);
+
+  return RV_SUCCESS;
+}
+
+RV_t bspNormalActivity()
+{
+  gptStopTimer(&GPTD4);
+
+  bspStartTimer10Sec();
+
+  return RV_SUCCESS;
 }

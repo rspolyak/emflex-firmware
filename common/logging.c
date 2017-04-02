@@ -78,7 +78,8 @@ void logEvent(const char *msg, ...)
   pBuf = (char *) chHeapAlloc(0, bytesWritten);
   if (pBuf == NULL)
   {
-    chprintf((BaseSequentialStream *) &CLI_SERIAL_PORT, "Failed to allocate from heap!\r\n");
+    chprintf((BaseSequentialStream *) &CLI_SERIAL_PORT, "Error: %s (%u): Failed to allocate from heap!\n",
+             __FUNCTION__, __LINE__);
     return;
   }
 

@@ -47,7 +47,7 @@ RV_t ctrlStateAdd(ctrl_sm_state_t state, runState cb, const char* name)
 {
   if (state < 0 || state >= CTRL_STATE_NUMBER)
   {
-    LOG_TRACE(CONTROL_CMP, "Incorrect state %d\r\n", state);
+    LOG_TRACE(CONTROL_CMP, "Incorrect state %d", state);
     return RV_FAILURE;
   }
 
@@ -64,11 +64,11 @@ const char* ctrlCurStateToStr()
 
 void changeState(ctrl_sm_event_t ev)
 {
-  LOG_TRACE(CONTROL_CMP, "Old state is %s!\r\n", ctrlCurStateToStr());
+  LOG_TRACE(CONTROL_CMP, "Old state is %s!", ctrlCurStateToStr());
 
   stateArray[c_state].cb(ev, &c_state);
 
-  LOG_TRACE(CONTROL_CMP, "New state is %s!\r\n", ctrlCurStateToStr());
+  LOG_TRACE(CONTROL_CMP, "New state is %s!", ctrlCurStateToStr());
 }
 
 static THD_WORKING_AREA(ctrlAppThread, CTRL_TASK_STACK_SIZE);
@@ -105,12 +105,12 @@ RV_t ctrlEventPost(ctrl_sm_event_t event)
 {
   msg_t resp = Q_OK;
 
-  LOG_TRACE(CONTROL_CMP, "Posting event %d\r\n", event);
+  LOG_TRACE(CONTROL_CMP, "Posting event %d", event);
 
   resp = chMBPost(&alertMsg, event, TIME_IMMEDIATE);
   if (resp < Q_OK)
   {
-    LOG_TRACE(CONTROL_CMP,"rv = %i\r\n", resp);
+    LOG_TRACE(CONTROL_CMP,"rv = %i", resp);
     return RV_FAILURE;
   }
 

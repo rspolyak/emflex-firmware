@@ -48,6 +48,7 @@ RV_t gsmCmpCommand(const char *inBuf, const char *cmpBuf);
 extern RV_t gsmModuleCmdSend(const char *buf);
 extern RV_t gsmCmdSend(const char *gsm_command);
 extern RV_t gsmModuleSend(const char *val);
+extern RV_t gsmLlDeviceStateGet(void);
 
 #define GSM_PHONE_BOOK_SIZE 10
 #define GSM_PHONE_NUMBER_LEN 17

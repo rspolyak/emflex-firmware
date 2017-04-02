@@ -34,7 +34,9 @@ typedef enum
   RV_NO_STR_START,
   RV_NO_STR_END,
   RV_NOT_COMPLETED,
-  RV_NOT_READY
+  RV_NOT_READY,
+  RV_NOT_EMPTY,
+  RV_TIMEOUT
 } RV_t;
 
 typedef enum

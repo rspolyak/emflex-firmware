@@ -4,10 +4,12 @@
 *               Low level functionality that communicates with GSM module:
 *               transmit new commands to GSM, parse response to sent commands
 *               (i.e. OK, FAIL) and handle incoming asynchronous messages
-*               (like events about new SMS
+*               (like events about new SMS.
+*               All functions in this file must be prepended with 'gsmLl'
+*               to distinguish GSM internal functionality from user API.
 *
 * Created on:   Mar 29, 2015
-* Author:       rostokus
+* Authors:      Rostyslav Spolyak, Denys Haryachyy
 ******************************************************************************
 
   This library is free software; you can redistribute it and/or
@@ -36,13 +38,6 @@
 #include "bsp.h"
 #include "serial_port.h"
 
-/* Handle errors returned by GSM module,
- * like out of balance, network unreachable */
-//#define GSM_ERROR_HANDLE
-
-/* Enables GSM low power mode */
-#define GSM_SLEEP
-
 gsmCbFunc_t gsmCbArray_g[GSM_EVENT_LAST];
 phoneBook_t phoneBook_g;
 
@@ -52,6 +47,8 @@ static uint32_t signal = 0;
 static uint32_t battery = 0;
 static bool gsmReady = false;
 static command_t cur_command = {0, true};
+
+static RV_t gsmLlStateAnalyze(const char *str, uint32_t len);
 
 static struct
 {
@@ -65,7 +62,17 @@ static bool gsm_is_ready = FALSE;
 static MUTEX_DECL(gsm_ready_mutex);
 static CONDVAR_DECL(gsm_ready_cond_var);
 
-RV_t gsmReadySet(void)
+static bool gsmReadyGet(void)
+{
+  return gsmReady;
+}
+
+static void gsmReadySet(void)
+{
+  gsmReady = true;
+}
+
+RV_t gsmIsOnSet(void)
 {
   chMtxLock(&gsm_ready_mutex);
 
@@ -78,13 +85,16 @@ RV_t gsmReadySet(void)
   return RV_SUCCESS;
 }
 
-RV_t gsmReadyGet(void)
+RV_t gsmIsOnGet(systime_t time)
 {
   chMtxLock(&gsm_ready_mutex);
 
   while (gsm_is_ready == FALSE)
   {
-    chCondWait(&gsm_ready_cond_var);
+    if (MSG_TIMEOUT == chCondWaitTimeout(&gsm_ready_cond_var, time))
+    {
+        return RV_TIMEOUT;
+    }
   }
 
   chMtxUnlock(&gsm_ready_mutex);
@@ -186,22 +196,20 @@ RV_t gsmModuleCmdSend(const char *buf)
 
   p = (char *) chHeapAlloc(0, len);
 
-  LOG_TRACE(GSM_CMP, "buf len=%u 0x%x heap\r\n", strnlen(buf, MAX_BUF_LEN), p);
-
   if (p)
   {
     strncpy(p, buf, len);
   }
   else
   {
-    LOG_TRACE(GSM_CMP,"GSM cmd pool is empty\r\n");
+    LOG_TRACE(GSM_CMP, "GSM cmd pool is empty");
     return RV_NOT_READY;
   }
 
   rdymsg = chMBPost(&gsm_tx_mb_s, (msg_t) p, TIME_IMMEDIATE);
   if (rdymsg != MSG_OK)
   {
-    LOG_TRACE(GSM_CMP,"Failed to queue TX msg, RV=%u\r\n", rdymsg);
+    LOG_TRACE(GSM_CMP,"Failed to queue TX msg, RV=%u", rdymsg);
     return RV_FAILURE;
   }
 
@@ -256,17 +264,17 @@ void gsmModuleSendGetHttpRequest(uint8_t signal, uint8_t battery)
 
 void gsmModuleCfg(void)
 {
-  gsmCmdSend(GSM_FIXED_BAUDRATE);
-  gsmCmdSend(GSM_ECHO_DISABLE);  
-  gsmCmdSend(GSM_TA_RESPONSE_FORMAT_ENABLE);
-  gsmCmdSend(GSM_SMS_TEXT_MESSAGE_FORMAT);
-  gsmCmdSend(GSM_NEW_SMS_MESSAGE_INDICATION);
-  gsmCmdSend(GSM_REPORT_ERROR_CODE_VERBOSE_ENABLE);
-  gsmCmdSend(GSM_LEGACY_SMS_CLEAR);
+  gsmModuleCmdSend(GSM_FIXED_BAUDRATE);
+  gsmModuleCmdSend(GSM_ECHO_DISABLE);
+  gsmModuleCmdSend(GSM_TA_RESPONSE_FORMAT_ENABLE);
+  gsmModuleCmdSend(GSM_SMS_TEXT_MESSAGE_FORMAT);
+  gsmModuleCmdSend(GSM_NEW_SMS_MESSAGE_INDICATION);
+  gsmModuleCmdSend(GSM_REPORT_ERROR_CODE_VERBOSE_ENABLE);
+  gsmModuleCmdSend(GSM_LEGACY_SMS_CLEAR);
 
   //gsmCmdSend(GSM_PHONEBOOK_READ_ALL);
 
-  gsmCmdSend(GSM_SLEEP_MODE_DTR);
+  gsmModuleCmdSend(GSM_SLEEP_MODE_DTR);
 }
 
 void gsmModulePhoneNumberAdd(char* number, char* name)
@@ -306,33 +314,28 @@ static RV_t gsmModuleAsyncEventHandle(char *str)
   return RV_SUCCESS;
 }
 
-/* Analyze input command from GSM module and send to corresponding receiver */
-static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len, uint32_t *val)
+/* Analyze data from GSM module */
+static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len)
 {
-  (void) len;
-
-  //*val = 0;
-
-  if ((!buf) || (!val))
+  if (buf == 0)
   {
     return RV_FAILURE;
   }
 
   /* gsm module is switched on */
-  if (RV_SUCCESS == gsmCmpCommand(buf, GSM_CALL_RDY_EVENT) ||
+  if (RV_SUCCESS == gsmCmpCommand(buf, GSM_CALL_RDY_EVENT) ||      
       RV_SUCCESS == gsmCmpCommand(buf, GSM_MODULE_VENDOR_NAME))
   {
-    gsmReady = true;
-
     /* allow commands to be dispatched to GSM */
     cur_command.ack = true;
 
-    gsmReadySet();
+    gsmIsOnSet();
 
     return RV_SUCCESS;
   }
-  if (RV_SUCCESS == gsmCmpCommand(buf, GSM_NETWORK_STATUS_STR))
+  else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_NETWORK_STATUS_STR))
   {
+#if 0
     uint32_t resp = strnlen(buf, len);
     uint32_t data = buf[resp-1] - '0';
 
@@ -340,22 +343,23 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len, uint32_t *val)
 
     if (data == 1)
     {
-      gsmReady = true;
+      //gsmReady = true;
     }
+#endif
     return RV_SUCCESS;
   }
   else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_POWER_DOWN_EVENT))
   {
     if (RV_SUCCESS != gsmCallEventCb(GSM_EVENT_DOWN))
     {
-      LOG_TRACE(GSM_CMP,"Failed to power off GSM\r\n");
+      LOG_TRACE(GSM_CMP,"Failed to power off GSM");
       return RV_FAILURE;
     }
 
-    LOG_TRACE(GSM_CMP, "GSM IS DISABLED\r\n");
-
+    LOG_TRACE(GSM_CMP, "GSM IS DISABLED");
+#if 0
     gsmReady = false;
-
+#endif
     return RV_SUCCESS;
   }
   else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_RDY_EVENT))
@@ -381,80 +385,23 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len, uint32_t *val)
 
     if (RV_SUCCESS != gsmCallEventCb(GSM_EVENT_POWER_LOW))
     {
-      LOG_TRACE(GSM_CMP,"Failed send under-voltage event\r\n");
+      LOG_TRACE(GSM_CMP, "Failed send under-voltage event");
       return RV_FAILURE;
     }
 
-    LOG_TRACE(GSM_CMP, "Received under-voltage event\r\n");
+    LOG_TRACE(GSM_CMP, "Received under-voltage event");
 
     return RV_SUCCESS;
   }
-  else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_BALANCE_RESPONSE))
+  else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_BALANCE_RESPONSE) ||
+           RV_SUCCESS == gsmCmpCommand(buf, GSM_BATTERY_CMD_RESPONCE) ||
+           RV_SUCCESS == gsmCmpCommand(buf, GSM_SIGNAL_CMD_RESPONCE))
   {
-    /* possible return types:
-     * +CUSD: 4  or  +CUSD: 2
-     * +CUSD: 1 or 0,"Na rahunku 13.05 grn.
-     *  */
-    char* pMatch = strstr(buf, GSM_BALANCE_MATCH_TYPE);
-    uint32_t ret_type = atoi(pMatch + strlen(GSM_BALANCE_MATCH_TYPE));
-
-    if ((ret_type == 1) || (ret_type == 0))
+    if (RV_SUCCESS != gsmLlStateAnalyze(buf, len))
     {
-      pMatch = strstr(buf, GSM_BALANCE_MATCH_STR);
-      balance_s.balance = atof(pMatch + strlen(GSM_BALANCE_MATCH_STR));
-      balance_s.state = true;
+      LOG_TRACE(GSM_CMP, "Failed analyze GSM state");
+      return RV_FAILURE;
     }
-    else if ((ret_type == 2) || (ret_type == 4))
-    {
-      balance_s.balance = 0.0;
-      balance_s.state = false;
-    }
-    else
-    {
-      LOG_TRACE(GSM_CMP,"GSM returned unexpected balance type - %u", ret_type);
-    }
-
-    LOG_TRACE(GSM_CMP, "Balance = %f", balance_s.balance);
-
-    return gsmCallEventCb(GSM_EVENT_BALANCE_SIGN_BATT);
-  }
-  else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_BATTERY_CMD_RESPONCE))
-  {
-    /* +CBC: 0,80,3916 */
-    char* sMatch = 0;
-    char *eMatch = 0;
-    sMatch = strchr(buf, ',');
-    eMatch = strrchr(buf, ',');
-    *eMatch = '\0';
-    battery = atoi(sMatch+1);
-
-    LOG_TRACE(GSM_CMP, "Battery discharge: %u", battery);
-
-    /* notify user after battery discharge level has reached 5% */
-    if (battery < 5)
-    {
-      if (RV_SUCCESS != gsmCallEventCb(GSM_EVENT_POWER_LOW))
-      {
-        LOG_TRACE(GSM_CMP,"Failed send under-voltage event\r\n");
-        return RV_FAILURE;
-      }
-    }
-
-    return RV_SUCCESS;
-  }
-  else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_SIGNAL_CMD_RESPONCE))
-  {
-    /* +CSQ: 9,0 */
-    char* sMatch = 0;
-    char *eMatch = 0;
-    sMatch = strchr(buf, ' ');
-    eMatch = strrchr(buf, ',');
-    *eMatch = '\0';
-    signal = atoi(sMatch+1);
-
-    LOG_TRACE(GSM_CMP, "Signal level: %u", signal);
-
-    return RV_SUCCESS;
   }
   /* New voice call */
   else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_NO_CARRIER))
@@ -474,58 +421,63 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len, uint32_t *val)
   {
     if (RV_SUCCESS != gsmModuleAsyncEventHandle(buf))
     {
-      LOG_TRACE(GSM_CMP,"Failed to sent parsed cmd\r\n");
+      LOG_TRACE(GSM_CMP, "Failed to sent parsed cmd");
       return RV_FAILURE;
     }
     return RV_SUCCESS;
   }
   else
   {
-    /* reply to previously sent command */
-    if (!strcmp(buf, "OK"))
+    /* '>' can be considered as SMS send acknowledge */
+    if (!strcmp(buf, "OK") || !strcmp(buf, ">"))
     {
-      *val = GSM_CMD_OK;
+        /* allow next command to be dispatched to GSM module */
+        cur_command.ack = true;
     }
     else if (!strcmp(buf, "ERROR"))
     {
-      *val = GSM_CMD_ERROR;
-      LOG_TRACE(GSM_CMP, "ERROR");
+      /* Blink LED once per 3 seconds. Specifies any error */
+      //bspIndicateError(3000);
+
+      /* allow next command to be dispatched to GSM module */
+      cur_command.ack = true;
+
+      LOG_ERROR(GSM_CMP, "GSM replied with error:%s", buf);
     }
-    else if (!strncmp(buf, "+CMS ERROR:", strlen("+CMS ERROR:")))
+    else if (!strncmp(buf, "+CMS ERROR:", strlen("+CMS ERROR:")) ||
+             !strncmp(buf, "+CME ERROR:", strlen("+CME ERROR:")))
     {
       char* sMatch = 0;
       sMatch = strchr(buf, ':');
       sMatch++;
 
+      /* normally 'PS busy' is received when SIM balance is zero.
+         Start blinking LED 4 times per second to notify user */
       if (strncmp(sMatch, "PS busy", sizeof("PS busy")))
-      {
-        *val = GSM_PS_BUSY;
+      {         
+         //bspIndicateError(250);
       }
+      /* Start blinking once per second */
       else if (strncmp(sMatch, "operation not allowed", sizeof("operation not allowed")))
       {
-        *val = GSM_OP_NOT;
+         //bspIndicateError(1000);
       }
+      /* Blink LED once per 3 seconds. Specifies any other error */
       else
       {
-        *val = GSM_CMS_ERROR;
+         //bspIndicateError(3000);
       }
 
-      LOG_TRACE(GSM_CMP, "CMS ERROR");
-    }
-    else if (!strncmp(buf, "+CME ERROR:", strlen("+CME ERROR:")))
-    {
-      *val = GSM_CME_ERROR;
+      bspIndicateError(3000);
 
-      LOG_TRACE(GSM_CMP, "CME ERROR");
-    }
-    /* while sending  SMS '>' can be considered as SMS send command acknowledgment */
-    else if (!strcmp(buf, ">"))
-    {
-      *val = GSM_SMS_PROMPT;
+      /* allow next command to be dispatched to GSM module */
+      cur_command.ack = true;
+
+      LOG_ERROR(GSM_CMP, "GSM replied with error:%s", buf);
     }
     else
     {
-      LOG_TRACE(GSM_CMP, "CMD:%s\r\n", buf);
+      LOG_TRACE(GSM_CMP, "Unknown GSM command received:%s", buf);
     }
   }
   return RV_SUCCESS;
@@ -537,10 +489,10 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len, uint32_t *val)
  * "\r\n> "
  * "\r\n+CMT*RESPONSE*\r\n*RESPONSE*\r\n" -> skip \r\n at the middle of response.
  *  */
-static RV_t gsmModuleCmdParse(const char *buf, int32_t len, gsmCmdAnalyze_t cb, uint32_t *val)
+static RV_t gsmModuleCmdParse(const char *buf, int32_t len)
 {
   static gsm_parse_state state = WAIT_FOR_SOS_CR_STATE;
-  static char gsmCmdBuf[MAX_GSM_CMD_LEN];
+  static char gsmCmdBuf[MAX_GSM_CMD_LEN * 3];
   static char *p = gsmCmdBuf;
   static uint8_t cmtPresence = 0;
 
@@ -584,7 +536,7 @@ static RV_t gsmModuleCmdParse(const char *buf, int32_t len, gsmCmdAnalyze_t cb, 
         }
         else
         {
-          LOG_TRACE(GSM_CMP,"char=%x\r\n", *buf);
+          LOG_TRACE(GSM_CMP,"char=%c", *buf);
           state = WAIT_FOR_SOS_CR_STATE;
         }
         ENABLE_GSM_TRACE(len, state, 0, 0);
@@ -626,7 +578,7 @@ static RV_t gsmModuleCmdParse(const char *buf, int32_t len, gsmCmdAnalyze_t cb, 
         }
         else
         {
-          LOG_TRACE(GSM_CMP,"char=%x\r\n", *buf);
+          LOG_TRACE(GSM_CMP,"char=%c", *buf);
           state = WAIT_FOR_SOS_CR_STATE;
         }
         ENABLE_GSM_TRACE(len, state, 0, 0);
@@ -657,7 +609,7 @@ static RV_t gsmModuleCmdParse(const char *buf, int32_t len, gsmCmdAnalyze_t cb, 
         }
         else
         {
-          LOG_TRACE(GSM_CMP,"char=%x\r\n", *buf);
+          LOG_TRACE(GSM_CMP,"char=%c", *buf);
           state = WAIT_FOR_SOS_CR_STATE;
         }
         ENABLE_GSM_TRACE(len, state, 0, 0);
@@ -667,11 +619,14 @@ static RV_t gsmModuleCmdParse(const char *buf, int32_t len, gsmCmdAnalyze_t cb, 
         *p = '\0';
         state = WAIT_FOR_SOS_CR_STATE;
         len--;
-        ENABLE_GSM_TRACE(len, state, 0, gsmCmdBuf);
-        if (RV_SUCCESS != cb(gsmCmdBuf, (p-gsmCmdBuf)+1, val))
+
+        LOG_TRACE(GSM_CMP, "New GSM command received:%s", gsmCmdBuf);
+
+        if (RV_SUCCESS != gsmModuleCmdAnalyze(gsmCmdBuf, (p-gsmCmdBuf)+1))
         {
-          LOG_TRACE(GSM_CMP,"Failed to analyze GSM reply\r\n");
+          LOG_ERROR(GSM_CMP, "Failed to analyze received GSM command");
         }
+
         p = gsmCmdBuf;
         break;
     }
@@ -686,123 +641,78 @@ static THD_FUNCTION(gsmTask, arg)
   char buf[MAX_GSM_CMD_LEN] = {0};
   char* pBuf = 0;
   msg_t res = 0;
-  uint32_t val = 0;
-  uint32_t currTime = 0;
   RV_t rv = RV_FAILURE;
-  uint32_t time = {0};
-  char lastCmd[GSM_CTRL_CMD_LEN] = {0};
-#if GSM_ERROR_HANDLE
-  BOOL firstTime = TRUE;
-#endif
+  uint32_t currTime = 0;
+  int32_t time = -15;
 
   while (1)
   {
     /*Decrease the read speed from UART*/
-    chThdSleepMilliseconds(100);
+    chThdSleepMilliseconds(200);
 
     /* dispatch next cmd to GSM if response to previous command was received */
     if (cur_command.ack == true)
     {
-      res = chMBFetch(&gsm_tx_mb_s, (msg_t*)&pBuf, 100);
+      res = chMBFetch(&gsm_tx_mb_s, (msg_t*) &pBuf, 100);
       if (res == MSG_OK)
       {
         cur_command.id++;
-#ifdef GSM_SLEEP
+
         /* exit sleep mode. serial port will be active after about 50ms */
         palClearPad(GPIOA, GPIOA_PIN6);
         chThdSleepMilliseconds(100);
-#endif
+
         LOG_TRACE(GSM_CMP, "Sending a command #%d:%s", cur_command.id, pBuf);
-        if (RV_SUCCESS != gsmModuleSend(pBuf))
+        rv = gsmModuleSend(pBuf);
+        if (RV_SUCCESS != rv)
         {
-          LOG_TRACE(GSM_CMP,"gsmModuleSend failed\r\n");
+          LOG_TRACE(GSM_CMP,"gsmModuleSend failed with %error %u", rv);
         }
 
-        cur_command.ack = false;
+        /* enter sleep mode */
+        palSetPad(GPIOA, GPIOA_PIN6);
 
-        /* store current command to be resent in case of GSM module error */
-        strncpy(lastCmd, pBuf, sizeof(lastCmd));
+        cur_command.ack = false;
 
         /* return memory block to heap pool */
         if (pBuf)
         {
-          LOG_TRACE(GSM_CMP, "0x%x free\r\n", pBuf);
           chHeapFree((void *) pBuf);
         }
       }
     }
 
-    /* get data from serial port if any. Get up to sizeof(buf) bytes */
-    memset(buf, 0, sizeof(buf));
-    gsmInByteNum = sdAsynchronousRead(&GSM_SERIAL_PORT, (uint8_t *) buf, MAX_GSM_CMD_LEN - 1);
-    if ((gsmInByteNum > 0) && (gsmInByteNum < MAX_GSM_CMD_LEN))
+    /* read data from serial port */
+    gsmInByteNum = sdAsynchronousRead(&GSM_SERIAL_PORT, (uint8_t *) buf, sizeof(buf));
+    if (gsmInByteNum)
     {
-      LOG_TRACE(GSM_CMP, "GSM returned %d bytes:%s", gsmInByteNum, buf);
+      LOG_TRACE(GSM_CMP, "GSM returned %u bytes", gsmInByteNum);
 
-      rv = gsmModuleCmdParse(buf, gsmInByteNum, gsmModuleCmdAnalyze, &val);
-      if (rv != RV_SUCCESS)
+      rv = gsmModuleCmdParse(buf, gsmInByteNum);
+      if (rv == RV_FAILURE)
       {
-          LOG_TRACE(GSM_CMP,"GSM parser error: %u", rv);
+        LOG_ERROR(GSM_CMP, "Failed to parse GSM command");
+        break;
       }
-
-      /* check if response to previously sent command was received */
-      if (val)
-      {
-#if GSM_ERROR_HANDLE
-        if (val != GSM_CMD_OK)
-        {
-          /* if out of balance error, then wait for user to pay */
-          /* if network is unreachable, then just wait */
-
-          /* in case of unrecoverable GSM error, send command again
-           * and reboot GSM if did not help */
-          if ((val == GSM_CME_ERROR) || (val == GSM_CMS_ERROR))
-          {
-            LOG_TRACE(GSM_CMP,"GSM replied with ERROR. rv=%u", rv);
-
-            if (firstTime)
-            {
-              chMBPostAhead(&gsm_tx_mb_s, (msg_t) lastCmd, TIME_IMMEDIATE);
-              firstTime = FALSE;
-            }
-            else
-            {
-              /* looks like we do not need to send GSM init commands during
-               * module reboot, so no need to save commands from GSM queue */
-
-              firstTime = TRUE;
-
-              /* reboot GSM module */
-
-              cur_command.ack = false;
-              continue;
-            }
-          }
-        }
-#endif
-        /* allow next command to be dispatched to GSM module */
-        cur_command.ack = true;
-#ifdef GSM_SLEEP
-        /* enter sleep mode */
-        palSetPad(GPIOA, GPIOA_PIN6);
-#endif
-      }
-      val = 0;
     }
 
-    /* detect low battery voltage level */
-    currTime = logTimeStampGet();
-    if ((currTime - time) >= 15)
+    /* query GSM module status (balance, battery, signal level) each 15 minutes */
+    if (gsmReadyGet() == true)
     {
-      time = currTime;
-      gsmCmdSend(GSM_BATTERY_DISCHARGE);
+      currTime = logTimeStampGet();
+      if ((currTime - time) >= 15)
+      {
+        time = currTime;
+        gsmLlDeviceStateGet();
+
+      }
     }
   }
 }
 
 RV_t gsmTaskInit(void)
 {
-  char number[] = "+380676708491";
+  char number[] = "+380982297151";
 
   /* create message queue to send asynchronous requests */
   chMBObjectInit(&gsm_tx_mb_s, gsm_tx_msg_queue_s, MAILBOX_QUEUE_TX_SIZE);
@@ -872,15 +782,8 @@ RV_t gsmCallEventCb(gsmEvent_t event)
   return RV_FAILURE;
 }
 
-bool gsmReadyCheck(void)
-{
-  return gsmReady;
-}
-
 RV_t gsmModuleInit()
 {
-  uint32_t count = 0;
-
   /* Check whether GSM module is already running.
    * Send test command and wait for GSM reply. */
   if (RV_SUCCESS != gsmModuleCmdSend(GSM_MODULE_MODEL_GET))
@@ -888,27 +791,20 @@ RV_t gsmModuleInit()
     return RV_FAILURE;
   }
 
-  /* add 1 sec delay */
-  while (count < 10)
+  /* If GSM module does not respond within 1 sec timeout,
+   * proceed to switch it on */
+  if (RV_TIMEOUT == gsmIsOnGet(S2ST(1)))
   {
-    chThdSleepMilliseconds(100);
-    if (gsmReady == true)
-    {
-      return RV_SUCCESS;
-    }
+      bspGsmPowerOnOff();
 
-    count++;
+      /* block until GSM is ready */
+      gsmIsOnGet(TIME_INFINITE);
+
+      /* GSM is ready to be configured. Send initialization commands */
+      gsmModuleCfg();
   }
 
-  /* If GSM module does not respond within timeout,
-   * proceed to switch it on */
-  bspGsmPowerOnOff();
-
-  /* block on cond var until received "Call Ready" from GSM */
-  gsmReadyGet();
-
-  /* GSM is ready to be configured. Send initialization commands */
-  gsmModuleCfg();
+  gsmReadySet();
 
   return RV_SUCCESS;
 }
@@ -950,7 +846,7 @@ RV_t gsmPhoneNumberFind(const char* number)
     }
   }
 
-  LOG_TRACE(GSM_CMP,"Phone number is not found\r\n");
+  LOG_TRACE(GSM_CMP, "Phone number is not found");
   return RV_FAILURE;
 }
 
@@ -976,7 +872,7 @@ RV_t gsmTaskCb(const char *in)
 
   if (gsmPhoneNumberFind(senderTelNum) != RV_SUCCESS)
   {
-    LOG_TRACE(GSM_CMP,"Unauthorized user access!\r\n");
+    LOG_TRACE(GSM_CMP, "Unauthorized user access!");
     return RV_FAILURE;
   }
 
@@ -999,7 +895,7 @@ RV_t gsmTaskCb(const char *in)
     return gsmCallEventCb(GSM_EVENT_SMS_STATE);
   }
 
-  LOG_TRACE(GSM_CMP,"Unsupported SMS command\r\n");
+  LOG_TRACE(GSM_CMP, "Unsupported SMS command");
 
   return RV_FAILURE;
 }
@@ -1008,7 +904,7 @@ RV_t gsmCmdSend(const char *gsm_command)
 {
   RV_t rv = RV_FAILURE;
 
-  if (gsmReadyCheck() == true)
+  if (gsmReadyGet() == true)
   { 
     if (RV_SUCCESS == (rv = gsmModuleCmdSend(gsm_command)))
     {
@@ -1022,14 +918,147 @@ RV_t gsmCmdSend(const char *gsm_command)
 
     if (RV_FAILURE == rv)
     {
-      LOG_TRACE(GSM_CMP,"Sending %s failed\r\n", gsm_command);
+      LOG_TRACE(GSM_CMP,"Sending %s failed", gsm_command);
       return RV_FAILURE;
     }
   }
   else
   {
-    LOG_TRACE(GSM_CMP, "GSM not ready\r\n");
+    LOG_TRACE(GSM_CMP, "GSM not ready");
     return RV_FAILURE;
   }
+  return RV_SUCCESS;
+}
+
+RV_t gsmLlDeviceStateGet(void)
+{
+  if (RV_SUCCESS == gsmCmdSend(GSM_SIGNAL_LEVEL) &&
+      RV_SUCCESS == gsmCmdSend(GSM_BATTERY_DISCHARGE) &&
+      RV_SUCCESS == gsmCmdSend(GSM_BALANCE_CHECK))
+  {
+      return RV_SUCCESS;
+  }
+
+  return RV_FAILURE;
+}
+
+static RV_t gsmLlStateAnalyze(const char *buf, uint32_t len)
+{
+  (void) len;
+
+  static uint8_t isGsmOk    = 0;
+  BOOL           isGsmError = RV_FALSE;
+
+  if (buf == 0)
+  {
+    return RV_FAILURE;
+  }
+
+  if (RV_SUCCESS == gsmCmpCommand(buf, GSM_BALANCE_RESPONSE))
+  {
+      /* possible return types:
+       * +CUSD: 4  or  +CUSD: 2
+       * +CUSD: 1 or 0,"Na rahunku 13.05 grn.
+       */
+      char* pMatch = strstr(buf, GSM_BALANCE_MATCH_TYPE);
+      uint32_t ret_type = atoi(pMatch + strlen(GSM_BALANCE_MATCH_TYPE));
+
+      if ((ret_type == 1) || (ret_type == 0))
+      {
+          pMatch = strstr(buf, GSM_BALANCE_MATCH_STR);
+          balance_s.balance = atof(pMatch + strlen(GSM_BALANCE_MATCH_STR));
+          balance_s.state = true;
+
+          if (balance_s.balance < 1.0)
+          {
+            isGsmError = RV_TRUE;
+          }
+          else
+          {
+            isGsmOk++;
+          }
+      }
+      else if ((ret_type == 2) || (ret_type == 4))
+      {
+          balance_s.balance = 0.0;
+          balance_s.state = false;
+
+          isGsmOk++;
+      }
+      else
+      {
+          LOG_TRACE(GSM_CMP,"GSM returned unexpected balance type - %u", ret_type);
+      }
+
+      LOG_TRACE(GSM_CMP, "Balance = %f", balance_s.balance);
+
+      /* if balance, signal and battery are OK, enable normal LED activity  */
+      if (isGsmOk == 3)
+      {
+        bspNormalActivity();
+      }
+
+      /* flush status counter */
+      isGsmOk = 0;
+
+      gsmCallEventCb(GSM_EVENT_BALANCE_SIGN_BATT);
+  }
+  else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_BATTERY_CMD_RESPONCE))
+  {
+      /* +CBC: 0,80,3916 */
+      char* sMatch = 0;
+      char *eMatch = 0;
+      sMatch = strchr(buf, ',');
+      eMatch = strrchr(buf, ',');
+      *eMatch = '\0';
+      battery = atoi(sMatch+1);
+
+      LOG_TRACE(GSM_CMP, "Battery discharge: %u", battery);
+
+      /* notify user after battery discharge level has reached 5% */
+      if (battery < 10)
+      {
+          isGsmError = RV_TRUE;
+
+          if (RV_SUCCESS != gsmCallEventCb(GSM_EVENT_POWER_LOW))
+          {
+              LOG_TRACE(GSM_CMP,"Failed to send under-voltage event");
+              return RV_FAILURE;
+          }
+      }
+      else
+      {
+         isGsmOk++;
+      }
+  }
+  else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_SIGNAL_CMD_RESPONCE))
+  {
+      /* +CSQ: 9,0 */
+      char* sMatch = 0;
+      char *eMatch = 0;
+      sMatch = strchr(buf, ' ');
+      eMatch = strrchr(buf, ',');
+      *eMatch = '\0';
+      signal = atoi(sMatch+1);
+
+      LOG_TRACE(GSM_CMP, "Signal level: %u", signal);
+
+      /* Notify about low signal level.
+         Blink LED once per second */
+      if (signal <= 1)
+      {
+        isGsmError = RV_TRUE;
+      }
+      else
+      {
+        isGsmOk++;
+      }
+  }
+
+  if (isGsmError == RV_TRUE)
+  {
+    bspIndicateError(1000);
+  }
+
   return RV_SUCCESS;
 }

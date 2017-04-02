@@ -34,7 +34,7 @@ typedef enum
   FINISH_STATE
 } gsm_parse_state;
 
-typedef RV_t (*gsmCmdAnalyze_t)(char *buf, uint32_t len, uint32_t *val);
+//typedef RV_t (*gsmCmdAnalyze_t)(char *buf, uint32_t len, uint32_t *val);
 
 typedef enum
 {

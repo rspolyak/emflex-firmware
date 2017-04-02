@@ -29,10 +29,10 @@ extern phoneBook_t phoneBook_g;
 
 RV_t gsmEventModuleReboot(void)
 {
-  LOG_TRACE(GSM_CMP, "Powering down!\r\n");
+  LOG_TRACE(GSM_CMP, "Powering down!");
   if (RV_SUCCESS != gsmModuleSend(GSM_POWER_DOWN))
   {
-    LOG_TRACE(GSM_CMP,"gsmModuleSend failed\r\n");
+    LOG_TRACE(GSM_CMP,"gsmModuleSend failed");
   }
 
   return RV_SUCCESS;
@@ -66,7 +66,7 @@ RV_t gsmSmsSend(const char* smsStr)
 
   if (phoneBook_g.resp_is_set == FALSE)
   {
-    LOG_TRACE(GSM_CMP,"No number to respond to\r\n");
+    LOG_TRACE(GSM_CMP,"No number to respond to");
     return RV_FAILURE;
   }
 
@@ -114,16 +114,7 @@ RV_t gsmVoiceCallHandle(void)
 
 RV_t gsmStateReqSend(void)
 {
-  if (RV_SUCCESS == gsmCmdSend(GSM_SIGNAL_LEVEL) &&
-      RV_SUCCESS == gsmCmdSend(GSM_BATTERY_DISCHARGE) &&
-      RV_SUCCESS == gsmCmdSend(GSM_BALANCE_CHECK))
-  {
-    return RV_SUCCESS;
-  }
-  else
-  {
-    return RV_FAILURE;
-  }
+  return gsmLlDeviceStateGet();
 }
 
 RV_t gsmATCmdSend(const char *buf, uint32_t len)

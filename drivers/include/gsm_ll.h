@@ -26,13 +26,13 @@
  */
 #define GSM_SERIAL_SPEED    19200
 
-#define GSM_THREAD_STACK_SIZE   1536
+#define GSM_THREAD_STACK_SIZE   1024
 
 #define MED_BUF_LEN 64
 #define GSM_SMS_INTERNAL_BLOCKS 3
 
 #define MAILBOX_QUEUE_TX_SIZE   20
-#define MAX_GSM_CMD_LEN         384
+#define MAX_GSM_CMD_LEN         128
 #define GSM_CTRL_CMD_LEN        32
 
 #define GSM_READ_TIMEOUT  1000
