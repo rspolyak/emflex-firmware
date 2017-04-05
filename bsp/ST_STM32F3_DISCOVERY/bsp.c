@@ -38,6 +38,10 @@ RV_t bspInit(void)
   palSetPadMode(GPIOA, 9, PAL_MODE_ALTERNATE(7));
   palSetPadMode(GPIOA, 10, PAL_MODE_ALTERNATE(7));
 
+  /* Activates I2C1 module pins */
+  palSetPadMode(GPIOB, 6, PAL_MODE_ALTERNATE(4));
+  palSetPadMode(GPIOB, 7, PAL_MODE_ALTERNATE(4));
+
   return RV_SUCCESS;
 }
 
@@ -59,4 +63,13 @@ void bspSystemPowerOn(void)
 
 void gsmSystemPowerOff(void)
 {
+}
+
+void bspSystemPowerOff(void)
+{
+}
+
+RV_t bspInitComplete(void)
+{
+  return RV_SUCCESS;
 }

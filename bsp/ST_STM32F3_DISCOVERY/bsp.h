@@ -39,6 +39,8 @@ extern RV_t bspInit(void);
 extern RV_t bspRegisterEventCb(bsp_event_t ev, bsp_cb_t cb);
 extern void bspGsmPowerOnOff(void);
 extern void bspSystemPowerOff(void);
+extern RV_t bspInitComplete(void);
+extern void bspSystemPowerOff(void);
 
 /**
  * @brief   CLI serial port.
