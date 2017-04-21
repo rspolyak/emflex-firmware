@@ -7,7 +7,7 @@ export TRG=ST_STM32F3_DISCOVERY
 #export TRG=gtrack
 
 #export PROFILE=tracking
-#export PROFILE=actuator
+export PROFILE=actuator
 #export PROFILE=gps_tracker
 #export PROFILE=wifi_camera
-export PROFILE=ble_prototype
+#export PROFILE=ble_prototype

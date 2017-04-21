@@ -46,8 +46,66 @@ uint32_t logTimeStampGet(void)
   return (timp.millisecond - timestamp_g) / 60000;
 }
 
+static RV_t bleResponseParse(const char *blCmdBuf, int32_t len)
+{
+  int resp = 0;
+
+  if (!blCmdBuf)
+  {
+    return RV_FAILURE;
+  }
+
+  if (0 == strncmp(blCmdBuf, "up", sizeof("up")-1))
+  {
+    LOG_TRACE(BLT_CMP, "UP button");
+
+    resp = chMBPost(&stepMsg, STEP_UP, TIME_IMMEDIATE);
+    if (resp < Q_OK)
+    {
+      LOG_TRACE(BLT_CMP, "rv = %i", resp);
+    }
+  }
+
+  if (0 == strncmp(blCmdBuf, "down", sizeof("down")-1))
+  {
+    LOG_TRACE(BLT_CMP, "DOWN button");
+
+    resp = chMBPost(&stepMsg, STEP_DOWN, TIME_IMMEDIATE);
+    if (resp < Q_OK)
+    {
+      LOG_TRACE(BLT_CMP, "rv = %i", resp);
+    }
+  }
+
+  if (0 == strncmp(blCmdBuf, "open", sizeof("open")-1))
+  {
+    LOG_TRACE(BLT_CMP, "OPEN button");
+
+    resp = chMBPost(&stepMsg, FULLOPEN, TIME_IMMEDIATE);
+    if (resp < Q_OK)
+    {
+      LOG_TRACE(BLT_CMP, "rv = %i", resp);
+    }
+  }
+
+  if (0 == strncmp(blCmdBuf, "close", sizeof("close")-1))
+  {
+    LOG_TRACE(BLT_CMP, "CLOSE button");
+
+    resp = chMBPost(&stepMsg, FULLCLOSED, TIME_IMMEDIATE);
+    if (resp < Q_OK)
+    {
+      LOG_TRACE(BLT_CMP, "rv = %i", resp);
+    }
+  }
+
+  return RV_SUCCESS;
+}
+
 void profileInit(void)
 {
+    blRegisterEventCb(bleResponseParse);
+
     cnfgrRegister("BLT", blInit);
     cnfgrRegister("Button", buttonAppInit);
     cnfgrRegister("Stepper", stepperAppInit);

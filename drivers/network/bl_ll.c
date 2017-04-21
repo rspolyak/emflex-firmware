@@ -24,6 +24,7 @@
 
 #include "common.h"
 #include "bl_ll_api.h"
+#include "bl_api.h"
 #include "utils.h"
 #include "bsp.h"
 #include "logging.h"
@@ -31,13 +32,27 @@
 
 #define MAX_CMD_LEN 128
 
-typedef enum
-{
-  PARSE_DATA_STATE,
-  FINISH_STATE
-} bl_parse_state_t;
-
 static THD_WORKING_AREA(blThread, 1024);
+
+blCbFunc_t blCallback_g = NULL;
+
+RV_t blRegisterEventCb(blCbFunc_t cb)
+{
+  blCallback_g = cb;
+
+  return RV_SUCCESS;
+}
+
+static RV_t blCallCb(const char *buf, int32_t len)
+{
+  if (blCallback_g == NULL)
+  {
+    LOG_TRACE(BL_CMP,"Callback is not registered");
+    return RV_FAILURE;
+  }
+
+  return blCallback_g(buf, len);
+}
 
 RV_t blModuleSend(const char *val)
 {
@@ -57,93 +72,6 @@ RV_t blModuleSend(const char *val)
   return RV_SUCCESS;
 }
 
-#if 0
-static RV_t bleResponseParse(const char *buf, int32_t len)
-{
-  static bl_parse_state_t state = PARSE_DATA_STATE;
-  static char blCmdBuf[MAX_CMD_LEN];
-  static char *p = blCmdBuf;
-  int resp = 0;
-
-  if (!buf)
-  {
-    return RV_FAILURE;
-  }
-
-  switch (state)
-  {
-    case PARSE_DATA_STATE:
-      while (len > 0)
-      {
-        if (*buf == '\n')
-        {
-          buf++;
-          len--;
-          state = FINISH_STATE;
-          break;
-        }
-        *p++ = *buf++;
-        len--;
-        if (len == 0)
-        {
-          LOG_TRACE(BLT_CMP, "len %u", len);
-          return RV_NOT_COMPLETED;
-        }
-      }
-
-    case FINISH_STATE:
-      *p = '\0';
-      state = PARSE_DATA_STATE;
-
-      if (0 == strncmp(blCmdBuf, "up", sizeof("up")-1))
-      {
-        LOG_TRACE(BLT_CMP, "UP button");
-
-        resp = chMBPost(&stepMsg, STEP_UP, TIME_IMMEDIATE);
-        if (resp < Q_OK)
-        {
-          LOG_TRACE(BLT_CMP, "rv = %i", resp);
-        }
-      }
-      else if (0 == strncmp(blCmdBuf, "down", sizeof("down")-1))
-      {
-        LOG_TRACE(BLT_CMP, "DOWN button");
-
-        resp = chMBPost(&stepMsg, STEP_DOWN, TIME_IMMEDIATE);
-        if (resp < Q_OK)
-        {
-          LOG_TRACE(BLT_CMP, "rv = %i", resp);
-        }
-      }
-      else if (0 == strncmp(blCmdBuf, "open", sizeof("open")-1))
-      {
-        LOG_TRACE(BLT_CMP, "OPEN button");
-
-        resp = chMBPost(&stepMsg, FULLOPEN, TIME_IMMEDIATE);
-        if (resp < Q_OK)
-        {
-          LOG_TRACE(BLT_CMP, "rv = %i", resp);
-        }
-      }
-      else if (0 == strncmp(blCmdBuf, "close", sizeof("close")-1))
-      {
-        LOG_TRACE(BLT_CMP, "CLOSE button");
-
-        resp = chMBPost(&stepMsg, FULLCLOSED, TIME_IMMEDIATE);
-        if (resp < Q_OK)
-        {
-          LOG_TRACE(BLT_CMP, "rv = %i", resp);
-        }
-      }
-
-      p = blCmdBuf;
-      break;
-  }
-
-  return RV_SUCCESS;
-}
-#endif
-
 static THD_FUNCTION(blTask, arg)
 {
   (void) arg;
@@ -161,7 +89,7 @@ static THD_FUNCTION(blTask, arg)
     {
       LOG_TRACE(BLT_CMP, "Bluetooth returned %d bytes:%s", blInByteNum, buf);
 
-      //bleResponseParse(buf, blInByteNum);
+      blCallCb(buf, blInByteNum);
     }
   }
 }

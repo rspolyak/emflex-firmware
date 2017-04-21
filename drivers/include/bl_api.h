@@ -24,9 +24,13 @@
 
 #include "common.h"
 
+typedef RV_t (*blCbFunc_t)(const char *buf, int32_t len);
+
 extern RV_t blInit(void);
 
 RV_t blModuleSend(const char *val);
+
+RV_t blRegisterEventCb(blCbFunc_t cb);
 
 #endif
 
