@@ -30,7 +30,6 @@
 #include "bl_ll_api.h"
 #include "utils.h"
 #include "bsp.h"
-#include "stepper.h"
 #include "logging.h"
 #include "serial_port.h"
 
@@ -44,6 +43,7 @@ typedef enum
 
 static THD_WORKING_AREA(blThread, 1024);
 
+#if 0
 static RV_t bleResponseParse(const char *buf, int32_t len)
 {
   static bl_parse_state_t state = PARSE_DATA_STATE;
@@ -128,6 +128,7 @@ static RV_t bleResponseParse(const char *buf, int32_t len)
 
   return RV_SUCCESS;
 }
+#endif
 
 static THD_FUNCTION(blTask, arg)
 {
@@ -148,7 +149,7 @@ static THD_FUNCTION(blTask, arg)
     {
       LOG_TRACE(BLT_CMP, "Bluetooth returned %d bytes:%s", blInByteNum, buf);
 
-      bleResponseParse(buf, blInByteNum);
+      //bleResponseParse(buf, blInByteNum);
     }
   }
 }

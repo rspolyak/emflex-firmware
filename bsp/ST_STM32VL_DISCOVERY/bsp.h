@@ -71,6 +71,8 @@ extern void bspSystemPowerOff(void);
 
 #define ACCEL_THREAD_STACK_SIZE 512
 
+#define WIFI_TASK_STACK_SIZE 512
+
 
 #endif /* BSP */
 
