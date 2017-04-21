@@ -61,6 +61,13 @@ extern void bspSystemPowerOff(void);
  */
 #define WIFI_SERIAL_PORT     SD3
 
+/**
+ * @brief   BL serial port.
+ * @note    Allowed values are SD1, SD2 or SD3.
+ * @note    SD3 (PB10 - TX, PB11 - RX)
+ */
+#define BL_SERIAL_PORT       SD3
+
 #define GPS_TASK_STACK_SIZE 512
 
 #define CTRL_TASK_STACK_SIZE 512

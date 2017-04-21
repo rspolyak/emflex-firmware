@@ -22,16 +22,13 @@
 #define BL_LL_API
 
 /**
- * @brief   CLI serial port.
- * @note    Allowed values are SD1, SD2 or SD3.
- * @note    SD1 (PA9 - TX, PA10 - RX)
- */
-#define BL_SERIAL_PORT     SD1
-
-/**
  * @brief   CLI serial speed.
  */
 #define BL_SERIAL_SPEED    9600
+
+#define BL_WRITE_TIMEOUT   1000
+
+#define BL_READ_TIMEOUT    1000
 
 RV_t blTaskInit(void);
 

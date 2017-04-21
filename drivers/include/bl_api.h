@@ -26,6 +26,8 @@
 
 extern RV_t blInit(void);
 
+RV_t blModuleSend(const char *val);
+
 #endif
 
 

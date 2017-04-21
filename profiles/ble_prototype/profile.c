@@ -26,8 +26,17 @@
 #include "bsp.h"
 #include "cnfgr_api.h"
 #include "bl_api.h"
+#include "cli.h"
+
+static RV_t helloWorld(void)
+{
+  blModuleSend("Hello world!");
+
+  return RV_SUCCESS;
+}
 
 void profileInit(void)
 {
+    cliCmdRegister("hello", &helloWorld);
     cnfgrRegister("BLT", blInit);
 }

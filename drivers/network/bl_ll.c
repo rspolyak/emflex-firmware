@@ -22,10 +22,6 @@
 ******************************************************************************
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
 #include "common.h"
 #include "bl_ll_api.h"
 #include "utils.h"
@@ -42,6 +38,24 @@ typedef enum
 } bl_parse_state_t;
 
 static THD_WORKING_AREA(blThread, 1024);
+
+RV_t blModuleSend(const char *val)
+{
+  msg_t resp = Q_OK;
+
+  if (!val)
+  {
+    return RV_FAILURE;
+  }
+
+  if ((resp = sdWriteTimeout(&BL_SERIAL_PORT, (uint8_t *) val, strlen(val),
+                             BL_WRITE_TIMEOUT)) < Q_OK)
+  {
+    LOG_TRACE(GSM_CMP,"Error. rv=%i", resp);
+  }
+
+  return RV_SUCCESS;
+}
 
 #if 0
 static RV_t bleResponseParse(const char *buf, int32_t len)
@@ -139,12 +153,10 @@ static THD_FUNCTION(blTask, arg)
 
   while (1)
   {
-    /*Decrease the read speed from UART*/
-    chThdSleepMilliseconds(100);
-
     /* get data from serial port if any. Get up to sizeof(buf) bytes */
     memset(buf, 0, sizeof(buf));
-    blInByteNum = sdAsynchronousRead(&SD1, (uint8_t *) buf, MAX_CMD_LEN - 1);
+    blInByteNum = sdReadTimeout(&BL_SERIAL_PORT, (uint8_t *) buf,
+                                MAX_CMD_LEN - 1, BL_READ_TIMEOUT);
     if ((blInByteNum > 0) && (blInByteNum < MAX_CMD_LEN))
     {
       LOG_TRACE(BLT_CMP, "Bluetooth returned %d bytes:%s", blInByteNum, buf);
