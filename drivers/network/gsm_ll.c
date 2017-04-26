@@ -49,6 +49,7 @@ static bool gsmReady = false;
 static command_t cur_command = {0, true};
 
 static RV_t gsmLlStateAnalyze(const char *str, uint32_t len);
+static RV_t gsmLAddCharIfBufHasSpace(char *pCurAddr, const char *pEndAddr, char val);
 
 static struct
 {
@@ -489,111 +490,121 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len)
  * "\r\n> "
  * "\r\n+CMT*RESPONSE*\r\n*RESPONSE*\r\n" -> skip \r\n at the middle of response.
  *  */
-static RV_t gsmModuleCmdParse(const char *buf, int32_t len)
+static RV_t gsmModuleCmdParse(const char *inGsmStr, int32_t inGsmStrLen)
 {
   static gsm_parse_state state = WAIT_FOR_SOS_CR_STATE;
-  static char gsmCmdBuf[MAX_GSM_CMD_LEN * 3];
-  static char *p = gsmCmdBuf;
+  static char gsmCmdBuf[MAX_GSM_CMD_LEN * 2];
+  static char *pGsmCmdBuf = gsmCmdBuf;
   static uint8_t cmtPresence = 0;
 
-  if (!buf)
+  const char *gsmCmdBufEndAddr = gsmCmdBuf + (sizeof(gsmCmdBuf) - 1);
+
+  if (!inGsmStr)
   {
     return RV_FAILURE;
   }
 
-  while (len > 0)
+  while (inGsmStrLen > 0)
   {
     switch (state)
     {
       case WAIT_FOR_SOS_CR_STATE:
         /* unlike other states, this state handle the case when junk bytes
          * are received before \r\n (like at gsm module startup) */
-        if (*buf == CR)
+        if (*inGsmStr == CR)
         {
           state = WAIT_FOR_SOS_LF_STATE;
         }
-        buf++;
-        len--;
-        if (len < 0)
+        inGsmStr++;
+        inGsmStrLen--;
+        if (inGsmStrLen < 0)
         {
-          ENABLE_GSM_TRACE(len, state, 0, 0);
           return RV_NOT_COMPLETED;
         }
-        ENABLE_GSM_TRACE(len, state, 0, 0);
         break;
 
       case WAIT_FOR_SOS_LF_STATE:
-        if (*buf == LF)
+        if (*inGsmStr == LF)
         {
-          buf++;
-          len--;
+          inGsmStr++;
+          inGsmStrLen--;
           state = STORE_DATA_STATE;
-          if (len < 0)
+          if (inGsmStrLen < 0)
           {
-            ENABLE_GSM_TRACE(len, state, 0, 0);
             return RV_NOT_COMPLETED;
           }
         }
         else
         {
-          LOG_TRACE(GSM_CMP,"char=%c", *buf);
+          LOG_TRACE(GSM_CMP, "Unexpected symbol received:%c. GSM state: WAIT_FOR_SOS_LF_STATE",
+                    *inGsmStr);
           state = WAIT_FOR_SOS_CR_STATE;
         }
-        ENABLE_GSM_TRACE(len, state, 0, 0);
         break;
 
       case STORE_DATA_STATE:
-        while (len > 0)
+        while (inGsmStrLen > 0)
         {
-          if (*buf == '>')
+          if (*inGsmStr == '>')
           {
-            *p++ = *buf++;
-            len--;
+            if (gsmLAddCharIfBufHasSpace(pGsmCmdBuf, gsmCmdBufEndAddr, *inGsmStr) != RV_SUCCESS)
+            {
+               LOG_TRACE(GSM_CMP, "Failed to add symbol %c to GSM cmd buffer (is full)."
+                                  "GSM state: STORE_DATA_STATE", *inGsmStr);
+            }
+            pGsmCmdBuf++;
+            inGsmStr++;
+            inGsmStrLen--;
             state = WAIT_FOR_SPACE_STATE;
             break;
           }
-          else if (*buf == CR)
+          else if (*inGsmStr == CR)
           {
-            buf++;
-            len--;
+            inGsmStr++;
+            inGsmStrLen--;
             state = WAIT_FOR_LF_STATE;
             break;
           }
-          *p++ = *buf++;
-          len--;
-          if (len == 0)
+
+          if (gsmLAddCharIfBufHasSpace(pGsmCmdBuf, gsmCmdBufEndAddr, *inGsmStr) != RV_SUCCESS)
           {
-            ENABLE_GSM_TRACE(len, state, 0, 0);
+             LOG_TRACE(GSM_CMP, "Failed to add symbol %c to GSM cmd buffer (is full)."
+                                "GSM state: STORE_DATA_STATE", *inGsmStr);
+          }
+          pGsmCmdBuf++;
+          inGsmStr++;
+          inGsmStrLen--;
+          if (inGsmStrLen == 0)
+          {
             return RV_NOT_COMPLETED;
           }
         }
-        ENABLE_GSM_TRACE(len, state, 0, buf);
         break;
 
       case WAIT_FOR_SPACE_STATE:
-        if (*buf == ' ')
+        if (*inGsmStr == ' ')
         {
-          buf++;
+          inGsmStr++;
           state = FINISH_STATE;
         }
         else
         {
-          LOG_TRACE(GSM_CMP,"char=%c", *buf);
+          LOG_TRACE(GSM_CMP, "Unexpected symbol received:%c. GSM state: WAIT_FOR_SOS_CR_STATE",
+                    *inGsmStr);
           state = WAIT_FOR_SOS_CR_STATE;
         }
-        ENABLE_GSM_TRACE(len, state, 0, 0);
         break;
 
       case WAIT_FOR_LF_STATE:
-        if (*buf == LF)
+        if (*inGsmStr == LF)
         {
-          buf++;
+          inGsmStr++;
           if ((0 == memcmp(gsmCmdBuf, GSM_MSG_CMT, strlen(GSM_MSG_CMT))) &&
               (cmtPresence == 0))
           {
             state = STORE_DATA_STATE;
             cmtPresence = 1;
-            len--;
+            inGsmStrLen--;
           }
           else
           {
@@ -601,33 +612,32 @@ static RV_t gsmModuleCmdParse(const char *buf, int32_t len)
             cmtPresence = 0;
           }
 
-          if (len < 0)
+          if (inGsmStrLen < 0)
           {
-            ENABLE_GSM_TRACE(len, state, 0, 0);
             return RV_NOT_COMPLETED;
           }
         }
         else
         {
-          LOG_TRACE(GSM_CMP,"char=%c", *buf);
+          LOG_TRACE(GSM_CMP, "Unexpected symbol received:%c. GSM state: WAIT_FOR_SOS_CR_STATE",
+                    *inGsmStr);
           state = WAIT_FOR_SOS_CR_STATE;
         }
-        ENABLE_GSM_TRACE(len, state, 0, 0);
         break;
 
       case FINISH_STATE:
-        *p = '\0';
+        *pGsmCmdBuf = '\0';
         state = WAIT_FOR_SOS_CR_STATE;
-        len--;
+        inGsmStrLen--;
 
         LOG_TRACE(GSM_CMP, "New GSM command received:%s", gsmCmdBuf);
 
-        if (RV_SUCCESS != gsmModuleCmdAnalyze(gsmCmdBuf, (p-gsmCmdBuf)+1))
+        if (RV_SUCCESS != gsmModuleCmdAnalyze(gsmCmdBuf, (pGsmCmdBuf-gsmCmdBuf)+1))
         {
           LOG_ERROR(GSM_CMP, "Failed to analyze received GSM command");
         }
 
-        p = gsmCmdBuf;
+        pGsmCmdBuf = gsmCmdBuf;
         break;
     }
   }
@@ -1061,4 +1071,17 @@ static RV_t gsmLlStateAnalyze(const char *buf, uint32_t len)
   }
 
   return RV_SUCCESS;
+}
+
+static RV_t gsmLAddCharIfBufHasSpace(char *pCurAddr, const char *pEndAddr, char val)
+{
+  if (pCurAddr <= pEndAddr)
+  {
+      *pCurAddr = val;
+      return RV_SUCCESS;
+  }
+  else
+  {
+      return RV_FAILURE;
+  }
 }

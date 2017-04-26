@@ -409,20 +409,7 @@ static RV_t underVoltageProcess(void)
     LOG_TRACE(CONTROL_CMP,"Low voltage msg send failed!");
     return RV_FAILURE;
   }
-#if 0
-  chThdSleepSeconds(20);
 
-  /* switch off GSM module */
-  bspGsmPowerOnOff();
-
-  /* before switching device off some delay is required until
-   * user receives power down notification via SMS.
-   * Such delay is implicitly added by gsmPowerOnOff() routine,
-   * so no need to add another one */
-
-  /* switch off device */
-  bspSystemPowerOff();
-#endif
   return RV_SUCCESS;
 }
 

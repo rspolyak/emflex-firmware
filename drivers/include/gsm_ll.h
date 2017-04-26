@@ -26,7 +26,7 @@
  */
 #define GSM_SERIAL_SPEED    19200
 
-#define GSM_THREAD_STACK_SIZE   1024
+#define GSM_THREAD_STACK_SIZE   912
 
 #define MED_BUF_LEN 64
 #define GSM_SMS_INTERNAL_BLOCKS 3
@@ -123,18 +123,6 @@
 #define GSM_NETWORK_STATUS               "AT+CREG?\r"
 #define GSM_NETWORK_STATUS_STR           "+CREG"
 #define GSM_NETWORK_MATCH_TYPE           "+CREG: "
-
-#define ENABLE_GSM_TRACE(_len, _state, _str, _buf)                              \
-                  {                                                             \
-                    uint32_t gsmTrace = 1;                                      \
-                    if (gsmTrace == 0)                                          \
-                    {                                                           \
-                      LOG_TRACE(GSM_CMP, "len=%u state=%u ", (_len), (_state)); \
-                      if (_str > 0)                                             \
-                        LOG_TRACE(GSM_CMP, "str=%s", (_buf));                   \
-                    }                                                           \
-                  }                                                             \
-
 
 RV_t gsmTaskCb(const char *in);
 RV_t gsmPhoneNumberParse(const char* buf, char* number);
