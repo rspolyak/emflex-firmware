@@ -25,5 +25,7 @@
 
 RV_t extAppInit(void);
 
+RV_t extAppSetCb(uint32_t channel, uint32_t mode, extcallback_t cb);
+
 #endif /* EXT_API */
 

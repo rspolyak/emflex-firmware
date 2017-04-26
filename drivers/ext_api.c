@@ -25,18 +25,29 @@
 #include "button.h"
 #include "stepper.h"
 
-static const EXTConfig but_config = {
-  {
-    {EXT_CH_MODE_FALLING_EDGE | EXT_CH_MODE_AUTOSTART | EXT_MODE_GPIOA, extcb1},
-    {EXT_CH_MODE_FALLING_EDGE | EXT_CH_MODE_AUTOSTART | EXT_MODE_GPIOA, extcb2},   
-  }
-};
+static EXTConfig but_config = {{}};
+
+RV_t extAppSetCb(uint32_t channel, uint32_t mode, extcallback_t cb)
+{
+  but_config.channels[channel].mode = mode;
+  but_config.channels[channel].cb = cb;
+
+  return RV_SUCCESS;
+}
 
 RV_t extAppInit(void)
 {
+  uint32_t channel = 0;
+
   extStart(&EXTD1, &but_config);
 
-  extChannelEnable(&EXTD1, 0);
+  for (channel = 0; channel < EXT_MAX_CHANNELS; channel++)
+  {
+      if (but_config.channels[channel].cb != NULL)
+      {
+          extChannelEnable(&EXTD1, channel);
+      }
+  }
 
   return RV_SUCCESS;
 }
