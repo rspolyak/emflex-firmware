@@ -25,14 +25,9 @@
 #include "stepper.h"
 #include "logging.h"
 
-void extcb1(EXTDriver *extp, expchannel_t channel)
+RV_t extcb1(void)
 {
-  (void)extp;
-  (void)channel;
-
   msg_t resp = Q_OK;
-
-  chSysLockFromISR();
 
   LOG_TRACE(BUT_CMP, "UP button");
 
@@ -42,19 +37,12 @@ void extcb1(EXTDriver *extp, expchannel_t channel)
     LOG_TRACE(BUT_CMP, "rv = %i", resp);
   }
 
-  chSysUnlockFromISR();
-
-  return;
+  return RV_SUCCESS;
 }
 
-void extcb2(EXTDriver *extp, expchannel_t channel)
+RV_t extcb2(void)
 {
-  (void)extp;
-  (void)channel;
-
   msg_t resp = Q_OK;
-
-  chSysLockFromISR();
 
   LOG_TRACE(BUT_CMP, "DOWN button");
 
@@ -64,9 +52,7 @@ void extcb2(EXTDriver *extp, expchannel_t channel)
     LOG_TRACE(BUT_CMP, "rv = %i", resp);
   }
 
-  chSysUnlockFromISR();
-
-  return;
+  return RV_SUCCESS;
 }
 
 RV_t buttonAppInit(void)

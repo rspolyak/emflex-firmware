@@ -23,27 +23,71 @@
 
 #include "common.h"
 #include "button.h"
-#include "stepper.h"
+#include "logging.h"
+#include "ext_api.h"
 
-static EXTConfig but_config = {{}};
+static mailbox_t extMailbox;
+static msg_t extMsgQueue[EXT_MAX_CHANNELS];
+static ext_cb_t cb_array[EXT_MAX_CHANNELS];
 
-RV_t extAppSetCb(uint32_t channel, uint32_t mode, extcallback_t cb)
+static EXTConfig ext_config = {{}};
+
+static void extApp_cb(EXTDriver *extp, expchannel_t channel)
 {
-  but_config.channels[channel].mode = mode;
-  but_config.channels[channel].cb = cb;
+  (void)extp;
+
+  chSysLockFromISR();
+
+  chMBPostI(&extMailbox, channel);
+
+  chSysUnlockFromISR();
+
+  return;
+}
+
+RV_t extAppCbRegister(uint32_t channel, uint32_t mode, ext_cb_t cb)
+{
+  ext_config.channels[channel].mode = mode;
+  ext_config.channels[channel].cb = extApp_cb;
+  cb_array[channel] = cb;
 
   return RV_SUCCESS;
+}
+
+static THD_WORKING_AREA(extThread, 512);
+
+static THD_FUNCTION(extTask, arg)
+{
+  (void) arg;
+
+  msg_t resp = Q_OK;
+  msg_t val = 0;
+
+  while (1)
+  {
+    /* wait for event */
+    if ((resp = chMBFetch(&extMailbox, &val, 100)) >= Q_OK)
+    {
+      cb_array[val]();
+    }
+  }
 }
 
 RV_t extAppInit(void)
 {
   uint32_t channel = 0;
 
-  extStart(&EXTD1, &but_config);
+  /* create message queue */
+  chMBObjectInit(&extMailbox, extMsgQueue, EXT_MAX_CHANNELS);
+
+  /* Create thread */
+  chThdCreateStatic(extThread, sizeof(extThread), NORMALPRIO+1, extTask, 0);
+
+  extStart(&EXTD1, &ext_config);
 
   for (channel = 0; channel < EXT_MAX_CHANNELS; channel++)
   {
-      if (but_config.channels[channel].cb != NULL)
+      if (ext_config.channels[channel].cb != NULL)
       {
           extChannelEnable(&EXTD1, channel);
       }

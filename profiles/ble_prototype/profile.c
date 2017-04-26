@@ -29,34 +29,20 @@
 #include "cli.h"
 #include "ext_api.h"
 
-static RV_t helloWorld(void)
+static RV_t gerkonMessage(void)
 {
-  blModuleSend("Hello world!");
+  blModuleSend("gerkon\r\n");
 
   return RV_SUCCESS;
 }
 
-void extcb_gerkon(EXTDriver *extp, expchannel_t channel)
-{
-  (void)extp;
-  (void)channel;
-
-  chSysLockFromISR();
-
-  sdPut(&CLI_SERIAL_PORT,  'd');
-
-  chSysUnlockFromISR();
-
-  return;
-}
-
 void profileInit(void)
 {
-    extAppSetCb(GPIOC_PIN2,
+    extAppCbRegister(GPIOC_PIN2,
                 EXT_CH_MODE_FALLING_EDGE | EXT_CH_MODE_AUTOSTART | EXT_MODE_GPIOC,
-                extcb_gerkon);
+                gerkonMessage);
 
-    cliCmdRegister("hello", &helloWorld);
+    cliCmdRegister("gerkon", &gerkonMessage);
     cnfgrRegister("BLT", blInit);
     cnfgrRegister("Ext", extAppInit);
 }

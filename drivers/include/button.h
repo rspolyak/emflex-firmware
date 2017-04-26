@@ -26,7 +26,7 @@
 
 extern RV_t buttonAppInit(void);
 
-void extcb1(EXTDriver *extp, expchannel_t channel);
-void extcb2(EXTDriver *extp, expchannel_t channel);
+RV_t extcb1(void);
+RV_t extcb2(void);
 
 #endif
