@@ -34,9 +34,9 @@ static EXTConfig ext_config = {{}};
 
 static void extApp_cb(EXTDriver *extp, expchannel_t channel)
 {
-  (void)extp;
-
   chSysLockFromISR();
+
+  extChannelDisableI(extp, channel);
 
   chMBPostI(&extMailbox, channel);
 
@@ -61,14 +61,16 @@ static THD_FUNCTION(extTask, arg)
   (void) arg;
 
   msg_t resp = Q_OK;
-  msg_t val = 0;
+  msg_t channel = 0;
 
   while (1)
   {
     /* wait for event */
-    if ((resp = chMBFetch(&extMailbox, &val, TIME_INFINITE)) >= Q_OK)
+    if ((resp = chMBFetch(&extMailbox, &channel, TIME_INFINITE)) >= Q_OK)
     {
-      cb_array[val]();
+      cb_array[channel]();
+
+      extChannelEnable(&EXTD1, channel);
     }
   }
 }
