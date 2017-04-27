@@ -75,8 +75,6 @@ static THD_FUNCTION(extTask, arg)
 
 RV_t extAppInit(void)
 {
-  uint32_t channel = 0;
-
   /* create message queue */
   chMBObjectInit(&extMailbox, extMsgQueue, EXT_MAX_CHANNELS);
 
@@ -84,14 +82,6 @@ RV_t extAppInit(void)
   chThdCreateStatic(extThread, sizeof(extThread), NORMALPRIO+1, extTask, 0);
 
   extStart(&EXTD1, &ext_config);
-
-  for (channel = 0; channel < EXT_MAX_CHANNELS; channel++)
-  {
-      if (ext_config.channels[channel].cb != NULL)
-      {
-          extChannelEnable(&EXTD1, channel);
-      }
-  }
 
   return RV_SUCCESS;
 }
