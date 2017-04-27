@@ -66,7 +66,7 @@ static THD_FUNCTION(extTask, arg)
   while (1)
   {
     /* wait for event */
-    if ((resp = chMBFetch(&extMailbox, &val, 100)) >= Q_OK)
+    if ((resp = chMBFetch(&extMailbox, &val, TIME_INFINITE)) >= Q_OK)
     {
       cb_array[val]();
     }
