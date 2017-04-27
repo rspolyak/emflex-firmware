@@ -31,7 +31,12 @@
 
 static RV_t gerkonMessage(void)
 {
-  blModuleSend("gerkon\r\n");
+  static uint32_t counter = 0;
+  char str[20];
+
+  snprintf(str, 20, "%u: gerkon\r\n", counter++);
+
+  blModuleSend(str);
 
   return RV_SUCCESS;
 }
