@@ -27,16 +27,27 @@
 #include "cnfgr_api.h"
 #include "bl_api.h"
 #include "cli.h"
+#include "ext_api.h"
 
-static RV_t helloWorld(void)
+static RV_t gerkonMessage(void)
 {
-  blModuleSend("Hello world!");
+  static uint32_t counter = 0;
+  char str[20];
+
+  snprintf(str, 20, "%u: gerkon\r\n", counter++);
+
+  blModuleSend(str);
 
   return RV_SUCCESS;
 }
 
 void profileInit(void)
 {
-    cliCmdRegister("hello", &helloWorld);
+    extAppCbRegister(GPIOC_PIN2,
+                EXT_CH_MODE_FALLING_EDGE | EXT_CH_MODE_AUTOSTART | EXT_MODE_GPIOC,
+                gerkonMessage);
+
+    cliCmdRegister("gerkon", &gerkonMessage);
     cnfgrRegister("BLT", blInit);
+    cnfgrRegister("Ext", extAppInit);
 }

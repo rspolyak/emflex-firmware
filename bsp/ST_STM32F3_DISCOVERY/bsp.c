@@ -42,6 +42,8 @@ RV_t bspInit(void)
   palSetPadMode(GPIOB, 6, PAL_MODE_ALTERNATE(4));
   palSetPadMode(GPIOB, 7, PAL_MODE_ALTERNATE(4));
 
+  palSetPadMode(GPIOC, GPIOC_PIN2, PAL_MODE_INPUT_PULLUP);
+
   return RV_SUCCESS;
 }
 

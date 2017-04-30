@@ -104,6 +104,14 @@ static RV_t bleResponseParse(const char *blCmdBuf, int32_t len)
 
 void profileInit(void)
 {
+    extAppCbRegister(0,
+                EXT_CH_MODE_FALLING_EDGE | EXT_CH_MODE_AUTOSTART | EXT_MODE_GPIOA,
+                extcb1);
+
+    extAppCbRegister(1,
+                EXT_CH_MODE_FALLING_EDGE | EXT_CH_MODE_AUTOSTART | EXT_MODE_GPIOA,
+                extcb2);
+
     blRegisterEventCb(bleResponseParse);
 
     cnfgrRegister("BLT", blInit);

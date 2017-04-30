@@ -23,7 +23,11 @@
 
 #include "common.h"
 
+typedef RV_t (*ext_cb_t)(void);
+
 RV_t extAppInit(void);
+
+RV_t extAppCbRegister(uint32_t channel, uint32_t mode, ext_cb_t cb);
 
 #endif /* EXT_API */
 
