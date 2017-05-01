@@ -536,7 +536,7 @@ static RV_t gsmModuleCmdParse(const char *inGsmStr, int32_t inGsmStrLen)
         }
         else
         {
-          LOG_TRACE(GSM_CMP, "Unexpected symbol received:%c. GSM state: WAIT_FOR_SOS_LF_STATE",
+          LOG_TRACE(GSM_CMP, "Unexpected symbol received:%x. GSM state: WAIT_FOR_SOS_LF_STATE",
                     *inGsmStr);
           state = WAIT_FOR_SOS_CR_STATE;
         }
@@ -589,7 +589,7 @@ static RV_t gsmModuleCmdParse(const char *inGsmStr, int32_t inGsmStrLen)
         }
         else
         {
-          LOG_TRACE(GSM_CMP, "Unexpected symbol received:%c. GSM state: WAIT_FOR_SOS_CR_STATE",
+          LOG_TRACE(GSM_CMP, "Unexpected symbol received:%x. GSM state: WAIT_FOR_SOS_CR_STATE",
                     *inGsmStr);
           state = WAIT_FOR_SOS_CR_STATE;
         }
@@ -619,7 +619,7 @@ static RV_t gsmModuleCmdParse(const char *inGsmStr, int32_t inGsmStrLen)
         }
         else
         {
-          LOG_TRACE(GSM_CMP, "Unexpected symbol received:%c. GSM state: WAIT_FOR_SOS_CR_STATE",
+          LOG_TRACE(GSM_CMP, "Unexpected symbol received:%x. GSM state: WAIT_FOR_SOS_CR_STATE",
                     *inGsmStr);
           state = WAIT_FOR_SOS_CR_STATE;
         }
