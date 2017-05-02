@@ -5,6 +5,6 @@ LDSCRIPT= bsp/$(TRG)/STM32F103x8.ld
 
 MCU  = cortex-m3
 
-#SRC:= $(wildcard drivers/network/wifi.c)
+#SRC:=
 
 CSRC+=$(patsubst %.c, %.o, $(SRC))
