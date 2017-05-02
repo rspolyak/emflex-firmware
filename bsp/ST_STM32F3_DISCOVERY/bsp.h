@@ -39,6 +39,8 @@ extern RV_t bspInit(void);
 extern RV_t bspRegisterEventCb(bsp_event_t ev, bsp_cb_t cb);
 extern void bspGsmPowerOnOff(void);
 extern void bspSystemPowerOff(void);
+extern RV_t bspInitComplete(void);
+extern void bspSystemPowerOff(void);
 
 /**
  * @brief   CLI serial port.
@@ -59,7 +61,7 @@ extern void bspSystemPowerOff(void);
  * @note    Allowed values are SD1, SD2 or SD3.
  * @note    SD1 (PA9 - TX, PA10 - RX)
  */
-#define WIFI_SERIAL_PORT     SD1
+#define WIFI_SERIAL_PORT    SD1
 
 /**
  * @brief   CLI serial port.
@@ -67,6 +69,13 @@ extern void bspSystemPowerOff(void);
  * @note    SD1 (PA9 - TX, PA10 - RX)
  */
 #define GSM_SERIAL_PORT     SD1
+
+/**
+ * @brief   CLI serial port.
+ * @note    Allowed values are SD1, SD2 or SD3.
+ * @note    SD1 (PA9 - TX, PA10 - RX)
+ */
+#define BL_SERIAL_PORT      SD1
 
 #define GSM_TASK_STACK_SIZE 1024
 

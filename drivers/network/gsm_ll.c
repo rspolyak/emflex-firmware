@@ -41,7 +41,7 @@
 //#define GSM_ERROR_HANDLE
 
 /* Enables GSM low power mode */
-#define GSM_SLEEP
+//#define GSM_SLEEP
 
 gsmCbFunc_t gsmCbArray_g[GSM_EVENT_LAST];
 phoneBook_t phoneBook_g;

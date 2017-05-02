@@ -70,6 +70,13 @@ extern RV_t bspInitComplete(void);
  */
 #define GSM_SERIAL_PORT     SD1
 
+/**
+ * @brief   CLI serial port.
+ * @note    Allowed values are SD1, SD2 or SD3.
+ * @note    SD1 (PA9 - TX, PA10 - RX)
+ */
+#define BL_SERIAL_PORT      SD1
+
 #define GSM_TASK_STACK_SIZE 1024
 
 #define GPS_TASK_STACK_SIZE 512
