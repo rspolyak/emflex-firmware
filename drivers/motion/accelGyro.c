@@ -44,7 +44,7 @@ imuCbFunc_t imuCbArray_g[IMU_EVENT_LAST] = {0};
                                   (max) = (cur);                    \
                                 }
 
-#define GYRO_I2C_TIMEOUT 100
+#define GYRO_I2C_TIMEOUT 1000
 
 typedef struct imuThreshold_s
 {
@@ -78,16 +78,31 @@ static void accelInitedSet(bool value)
 
 static RV_t accelGyroRead(uint8_t addr, uint8_t reg, uint8_t *out, uint8_t *err)
 {
-  RV_t rv = RV_SUCCESS;
+  msg_t i2cRv = MSG_RESET;
   uint8_t regBuf = reg;
 
-  if (MSG_OK != i2cMasterTransmitTimeout(&I2CD1, addr, &regBuf, 1, out, 1,
-                                         GYRO_I2C_TIMEOUT))
+  if (out == 0 || err == 0)
+  {
+    return RV_FAILURE;
+  }
+
+  *err = 0;
+
+  i2cRv = i2cMasterTransmitTimeout(&I2CD1, addr, &regBuf, 1, out, 1,
+                                   GYRO_I2C_TIMEOUT);
+  if (MSG_RESET == i2cRv)
   {
     *err = i2cGetErrors(&I2CD1);
-    rv = RV_FAILURE;
+    return RV_ERROR;
   }
-  return rv;
+  else if (MSG_RESET == i2cRv)
+  {
+     return RV_TIMEOUT;
+  }
+  else
+  {
+    return RV_SUCCESS;
+  }
 }
 
 static RV_t accelGyroWrite(uint8_t addr, uint8_t reg, uint8_t val, uint8_t *err)
@@ -343,12 +358,6 @@ static THD_FUNCTION(accelGyroTask, arg)
   (void)arg;
   dof_t dof;
   dof_t sumDof;
-  float xMax = 0.0;
-  float yMax = 0.0;
-  float delta_x = 0.0;
-  float delta_y = 0.0;
-  char sendSms[64] = {0};
-  char deltaStr[64] = {0};
   uint32_t i = 0;
 
   while (1)
@@ -373,10 +382,6 @@ static THD_FUNCTION(accelGyroTask, arg)
     sumDof.y /= numSamples;
     sumDof.z /= numSamples;
 
-    /* calculate max angle value for each axis */
-    maxValSet(sumDof.x, xMax);
-    maxValSet(sumDof.y, yMax);
-
     /* if either x or y angle is out of allowed range - notify user */
     if (!((sumDof.x >= xThreshold.min) && (sumDof.x <= xThreshold.max))
         ||
@@ -384,23 +389,7 @@ static THD_FUNCTION(accelGyroTask, arg)
     {
       LOG_TRACE(GYRO_CMP, "ANGLE x=%f y=%f", sumDof.x, sumDof.y);
 
-      delta_x = sumDof.x - ((xThreshold.max + xThreshold.min) / 2);
-      delta_y = sumDof.y - ((yThreshold.max + yThreshold.min) / 2);
-
-      //strncpy(sendSms, "Angle change detected (x,y): ", sizeof(sendSms));
-      if (RV_SUCCESS == floatToStr(delta_x, deltaStr, sizeof(deltaStr)))
-      {
-        strncat(sendSms, deltaStr, (sizeof(sendSms) - strlen(sendSms) - 1));
-      }
-      if (RV_SUCCESS == floatToStr(delta_y, deltaStr, sizeof(deltaStr)))
-      {
-        strncat(sendSms, ",", (sizeof(sendSms) - strlen(sendSms) - 1));
-        strncat(sendSms, deltaStr, (sizeof(sendSms) - strlen(sendSms) - 1));
-      }
-
       imuCallEventCb(IMU_EVENT_ALARM);
-
-      memset(sendSms, 0x00, sizeof(sendSms));
     }
 
     chThdSleepMilliseconds(IMU_GET_RATE_MSEC);
@@ -424,7 +413,11 @@ RV_t accelGyroInit(void)
     rv = accelGyroRead(MPU6050_ADDRESS, MPU6050_RA_WHO_AM_I, rcvBuf, &err);
     if (rv != RV_SUCCESS)
     {
-      LOG_TRACE(GYRO_CMP, "WHO_AM_I=error = %d", err);
+      LOG_TRACE(GYRO_CMP, "WHO_AM_I error.");
+      if (rv == RV_ERROR)
+      {
+        LOG_TRACE(GYRO_CMP, "I2C error code %d", err);
+      }
       break;
     }
 
