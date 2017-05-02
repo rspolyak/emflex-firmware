@@ -375,6 +375,7 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len)
   {
     return RV_SUCCESS;
   }
+#if 0
   else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_POWER_WARN_EVENT))
   {
     /* change supply voltage range from normal: 3.4 ... 4.5V to extreme: 3.1…4.7V
@@ -394,6 +395,7 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len)
 
     return RV_SUCCESS;
   }
+#endif
   else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_BALANCE_RESPONSE) ||
            RV_SUCCESS == gsmCmpCommand(buf, GSM_BATTERY_CMD_RESPONCE) ||
            RV_SUCCESS == gsmCmpCommand(buf, GSM_SIGNAL_CMD_RESPONCE))
@@ -956,8 +958,9 @@ static RV_t gsmLlStateAnalyze(const char *buf, uint32_t len)
 {
   (void) len;
 
-  static uint8_t isGsmOk    = 0;
-  BOOL           isGsmError = RV_FALSE;
+  static uint8_t isGsmOk         = 0;
+  static BOOL    isBatNotifSend  = RV_FALSE;
+  BOOL           isGsmError      = RV_FALSE;
 
   if (buf == 0)
   {
@@ -1025,20 +1028,26 @@ static RV_t gsmLlStateAnalyze(const char *buf, uint32_t len)
 
       LOG_TRACE(GSM_CMP, "Battery discharge: %u", battery);
 
-      /* notify user after battery discharge level has reached 5% */
+      /* send notification about low battery */
       if (battery < 10)
       {
-          isGsmError = RV_TRUE;
+        isGsmError = RV_TRUE;
 
+        if (isBatNotifSend == RV_FALSE)
+        {
           if (RV_SUCCESS != gsmCallEventCb(GSM_EVENT_POWER_LOW))
           {
-              LOG_TRACE(GSM_CMP,"Failed to send under-voltage event");
-              return RV_FAILURE;
+            LOG_TRACE(GSM_CMP,"Failed to send under-voltage event");
+            return RV_FAILURE;
           }
+
+          isBatNotifSend = RV_TRUE;
+        }
       }
       else
       {
          isGsmOk++;
+         isBatNotifSend = RV_FALSE;
       }
   }
   else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_SIGNAL_CMD_RESPONCE))

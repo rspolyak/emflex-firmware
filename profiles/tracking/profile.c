@@ -402,9 +402,9 @@ static RV_t ctrlGsmStateSend()
 
 static RV_t underVoltageProcess(void)
 {
-  LOG_TRACE(CONTROL_CMP, "Low battery voltage: 10%!");
+  LOG_TRACE(CONTROL_CMP, "Low battery voltage!");
 
-  if (RV_SUCCESS != gsmSmsSend("Low battery voltage: 10%!"))
+  if (RV_SUCCESS != gsmSmsSend("Low battery voltage!"))
   {
     LOG_TRACE(CONTROL_CMP,"Low voltage msg send failed!");
     return RV_FAILURE;
