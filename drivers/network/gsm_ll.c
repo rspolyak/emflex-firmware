@@ -49,7 +49,7 @@ static bool gsmReady = false;
 static command_t cur_command = {0, true};
 
 static RV_t gsmLlStateAnalyze(const char *str, uint32_t len);
-static RV_t gsmLAddCharIfBufHasSpace(char *pCurAddr, const char *pEndAddr, char val);
+static void gsmLlCmdDump(uint32_t bufLen, const char *buf);
 
 static struct
 {
@@ -60,8 +60,10 @@ static struct
 static THD_WORKING_AREA(gsmThread, GSM_THREAD_STACK_SIZE);
 
 static bool gsm_is_ready = FALSE;
-static MUTEX_DECL(gsm_ready_mutex);
+static MUTEX_DECL(gsm_gSDMutex);
 static CONDVAR_DECL(gsm_ready_cond_var);
+
+extern mutex_t gSDMutex;
 
 static bool gsmReadyGet(void)
 {
@@ -75,20 +77,20 @@ static void gsmReadySet(void)
 
 RV_t gsmIsOnSet(void)
 {
-  chMtxLock(&gsm_ready_mutex);
+  chMtxLock(&gsm_gSDMutex);
 
   gsm_is_ready = TRUE;
 
   chCondSignal(&gsm_ready_cond_var);
 
-  chMtxUnlock(&gsm_ready_mutex);
+  chMtxUnlock(&gsm_gSDMutex);
 
   return RV_SUCCESS;
 }
 
 RV_t gsmIsOnGet(systime_t time)
 {
-  chMtxLock(&gsm_ready_mutex);
+  chMtxLock(&gsm_gSDMutex);
 
   while (gsm_is_ready == FALSE)
   {
@@ -98,7 +100,7 @@ RV_t gsmIsOnGet(systime_t time)
     }
   }
 
-  chMtxUnlock(&gsm_ready_mutex);
+  chMtxUnlock(&gsm_gSDMutex);
 
   return RV_SUCCESS;
 }
@@ -549,12 +551,15 @@ static RV_t gsmModuleCmdParse(const char *inGsmStr, int32_t inGsmStrLen)
         {
           if (*inGsmStr == '>')
           {
-            if (gsmLAddCharIfBufHasSpace(pGsmCmdBuf, gsmCmdBufEndAddr, *inGsmStr) != RV_SUCCESS)
+            if (pGsmCmdBuf <= gsmCmdBufEndAddr)
             {
-               LOG_TRACE(GSM_CMP, "Failed to add symbol %c to GSM cmd buffer (is full)."
-                                  "GSM state: STORE_DATA_STATE", *inGsmStr);
+              *pGsmCmdBuf = *inGsmStr;
+              pGsmCmdBuf++;
             }
-            pGsmCmdBuf++;
+            else
+            {
+              LOG_TRACE(GSM_CMP, "Failed to add symbol %c. GSM cmd buffer is full", *inGsmStr);
+            }
             inGsmStr++;
             inGsmStrLen--;
             state = WAIT_FOR_SPACE_STATE;
@@ -568,12 +573,16 @@ static RV_t gsmModuleCmdParse(const char *inGsmStr, int32_t inGsmStrLen)
             break;
           }
 
-          if (gsmLAddCharIfBufHasSpace(pGsmCmdBuf, gsmCmdBufEndAddr, *inGsmStr) != RV_SUCCESS)
+          if (pGsmCmdBuf < gsmCmdBufEndAddr)
           {
-             LOG_TRACE(GSM_CMP, "Failed to add symbol %c to GSM cmd buffer (is full)."
-                                "GSM state: STORE_DATA_STATE", *inGsmStr);
+            *pGsmCmdBuf = *inGsmStr;
+            pGsmCmdBuf++;
           }
-          pGsmCmdBuf++;
+          else
+          {
+            LOG_TRACE(GSM_CMP, "Failed to add symbol %c. GSM cmd buffer is full", *inGsmStr);
+          }
+
           inGsmStr++;
           inGsmStrLen--;
           if (inGsmStrLen == 0)
@@ -699,6 +708,8 @@ static THD_FUNCTION(gsmTask, arg)
     if (gsmInByteNum)
     {
       LOG_TRACE(GSM_CMP, "GSM returned %u bytes", gsmInByteNum);
+
+      gsmLlCmdDump(gsmInByteNum, buf);
 
       rv = gsmModuleCmdParse(buf, gsmInByteNum);
       if (rv == RV_FAILURE)
@@ -1082,15 +1093,21 @@ static RV_t gsmLlStateAnalyze(const char *buf, uint32_t len)
   return RV_SUCCESS;
 }
 
-static RV_t gsmLAddCharIfBufHasSpace(char *pCurAddr, const char *pEndAddr, char val)
+static void gsmLlCmdDump(uint32_t bufLen, const char *buf)
 {
-  if (pCurAddr <= pEndAddr)
-  {
-      *pCurAddr = val;
-      return RV_SUCCESS;
-  }
-  else
-  {
-      return RV_FAILURE;
-  }
+    if (!buf)
+    {
+        return;
+    }
+
+    chMtxLock(&gSDMutex);
+    chprintf(((BaseSequentialStream *) &CLI_SERIAL_PORT), "___________\r\n");
+
+    for (uint32_t i = 0; i < bufLen; i++)
+    {
+       chprintf(((BaseSequentialStream *) &CLI_SERIAL_PORT), "%02x ", buf[i]);
+    }
+
+    chprintf(((BaseSequentialStream *) &CLI_SERIAL_PORT), "\r\n___________\r\n");
+    chMtxUnlock(&gSDMutex);
 }
