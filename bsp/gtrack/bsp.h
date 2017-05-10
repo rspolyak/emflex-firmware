@@ -60,5 +60,7 @@ extern RV_t bspNormalActivity(void);
 
 #define BSP_GSM_PWR_PIN  GPIOC_PIN2
 
+#define BSP_PWR_OF_BUT   GPIOB_PIN12
+
 #endif /* BSP */
 

@@ -57,24 +57,40 @@ void bspSystemPowerOff(void)
   return;
 }
 
+static void pwrOff(void *arg) {
+
+  (void)arg;
+
+  if (palReadPad(GPIOB, BSP_PWR_OF_BUT))
+  {
+      /* switch off GSM module */
+      /* pull down PWRKEY pin in GSM module */
+      palSetPad(GPIOC, BSP_GSM_PWR_PIN);
+
+      /* wait at least 1 sec */
+      for (uint32_t i = 0; i < 0x8FFFFF; i++)
+        ;
+
+      /* release PWRKEY (automatically raises HIGH) */
+      palClearPad(GPIOC, BSP_GSM_PWR_PIN);
+
+      /* switch off device */
+      bspSystemPowerOff();
+  }
+}
+
 static void bspExtcb1(EXTDriver *extp, expchannel_t channel)
 {
   (void)extp;
   (void)channel;
 
-  /* switch off GSM module */
-  /* pull down PWRKEY pin in GSM module */
-  palSetPad(GPIOC, BSP_GSM_PWR_PIN);
+  static virtual_timer_t vt4;
 
-  /* wait at least 1 sec */
-  for (uint32_t i = 0; i < 0xFFFFFF; i++)
-      ;
+  chSysLockFromISR();
 
-  /* release PWRKEY (automatically raises HIGH) */
-  palClearPad(GPIOC, BSP_GSM_PWR_PIN);
+  chVTSetI(&vt4, S2ST(2), pwrOff, NULL);
 
-  /* switch off device */
-  bspSystemPowerOff();
+  chSysUnlockFromISR();
 
   return;
 }
@@ -168,10 +184,10 @@ static const GPTConfig bspGpt4InitialCfg = {
   0
 };
 
-static RV_t bspStartTimer10Sec(void)
+static RV_t bspStartTimer3Sec(void)
 {
   gptStart(&GPTD4, &bspGpt4InitialCfg);
-  gptStartContinuous(&GPTD4, 10000);
+  gptStartContinuous(&GPTD4, 3000);
 
   return RV_SUCCESS;
 }
@@ -186,7 +202,7 @@ RV_t bspInitComplete(void)
 
     /* Display normal device activity.
      * Blink status LED each 10 sec */
-    bspStartTimer10Sec();
+    bspStartTimer3Sec();
 
     return RV_SUCCESS;
 }
@@ -205,7 +221,7 @@ RV_t bspNormalActivity()
 {
   gptStopTimer(&GPTD4);
 
-  bspStartTimer10Sec();
+  bspStartTimer3Sec();
 
   return RV_SUCCESS;
 }
