@@ -26,6 +26,9 @@
 
 RV_t bspInit(void)
 {
+  /* Set serial port TX pin to alternative mode */
+  palSetPadMode(GPIOA, 9, PAL_MODE_STM32_ALTERNATE_PUSHPULL);
+
   return RV_SUCCESS;
 }
 
