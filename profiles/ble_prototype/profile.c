@@ -43,7 +43,7 @@ static RV_t gerkonMessage(void)
 
 void profileInit(void)
 {
-    extAppCbRegister(GPIOC_PIN2,
+    extAppCbRegister(2,
                 EXT_CH_MODE_FALLING_EDGE | EXT_CH_MODE_AUTOSTART | EXT_MODE_GPIOC,
                 gerkonMessage);
 
