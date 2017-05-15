@@ -1,9 +1,11 @@
-/*****************************************************************************
-* File:       button.h
+/******************************************************************************
+* File:        bsp.c
 *
-* Created on: Apr 24, 2016
+* Created on:  May 02, 2017
 *
-* Author:     rostokus
+* Description: platform specific routines for custom STM32F103 dev board
+*
+* Author:      Rostyslav Spolyak
 ******************************************************************************
 
   This library is free software; you can redistribute it and/or
@@ -17,16 +19,35 @@
   You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, see <http://www.gnu.org/licenses/>.
 ******************************************************************************
- */
-
-#ifndef BUT_H
-#define BUT_H
+*/
 
 #include "common.h"
+#include "bsp.h"
 
-extern RV_t buttonAppInit(void);
+RV_t bspInit(void)
+{
+  /* Set serial port TX pin to alternative mode */
+  palSetPadMode(GPIOA, 9, PAL_MODE_STM32_ALTERNATE_PUSHPULL);
 
-RV_t extcb1(void);
-RV_t extcb2(void);
+  return RV_SUCCESS;
+}
 
-#endif
+RV_t bspRegisterEventCb(bsp_event_t ev, bsp_cb_t cb)
+{
+  (void) ev;
+  (void) cb;
+
+  return RV_SUCCESS;
+}
+
+void bspGsmPowerOnOff(void)
+{
+}
+
+void bspSystemPowerOn(void)
+{
+}
+
+void bspSystemPowerOff(void)
+{
+}
