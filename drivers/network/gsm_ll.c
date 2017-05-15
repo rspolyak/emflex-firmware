@@ -47,9 +47,12 @@ static uint32_t signal = 0;
 static uint32_t battery = 0;
 static bool gsmReady = false;
 static command_t cur_command = {0, true};
+static virtual_timer_t vt;
 
 static RV_t gsmLlStateAnalyze(const char *str, uint32_t len);
 static void gsmLlCmdDump(uint32_t bufLen, const char *buf);
+static uint8_t gGsmLastCmdResend = 0;
+
 
 static struct
 {
@@ -438,11 +441,13 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len)
     {
         /* allow next command to be dispatched to GSM module */
         cur_command.ack = true;
+
+        chVTReset(&vt);
     }
     else if (!strcmp(buf, "ERROR"))
     {
       /* Blink LED once per 3 seconds. Specifies any error */
-      //bspIndicateError(3000);
+      bspIndicateError(3000);
 
       /* allow next command to be dispatched to GSM module */
       cur_command.ack = true;
@@ -460,20 +465,18 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len)
          Start blinking LED 4 times per second to notify user */
       if (strncmp(sMatch, "PS busy", sizeof("PS busy")))
       {         
-         //bspIndicateError(250);
+         bspIndicateError(250);
       }
       /* Start blinking once per second */
       else if (strncmp(sMatch, "operation not allowed", sizeof("operation not allowed")))
       {
-         //bspIndicateError(1000);
+         bspIndicateError(1000);
       }
       /* Blink LED once per 3 seconds. Specifies any other error */
       else
       {
-         //bspIndicateError(3000);
+         bspIndicateError(3000);
       }
-
-      bspIndicateError(3000);
 
       /* allow next command to be dispatched to GSM module */
       cur_command.ack = true;
@@ -655,6 +658,20 @@ static RV_t gsmModuleCmdParse(const char *inGsmStr, int32_t inGsmStrLen)
   return RV_SUCCESS;
 }
 
+void gsmLlTimeoutCb(void *param)
+{
+  (void) param;
+
+  /* Reset GSM module */
+  palSetPad(GPIOA, GPIOA_PIN1);
+  for (int i = 0; i < 1000; i++)
+    ;
+  palClearPad(GPIOA, GPIOA_PIN1);
+
+  /* re-send previous command */
+  gGsmLastCmdResend = 1;
+}
+
 static THD_FUNCTION(gsmTask, arg)
 {
   (void) arg;
@@ -665,11 +682,26 @@ static THD_FUNCTION(gsmTask, arg)
   RV_t rv = RV_FAILURE;
   uint32_t currTime = 0;
   int32_t time = -15;
+  char gsmCurrCmd[32] = {0};
+
+  chVTObjectInit(&vt);
 
   while (1)
   {
     /*Decrease the read speed from UART*/
     chThdSleepMilliseconds(200);
+
+    if (gGsmLastCmdResend)
+    {
+      LOG_TRACE(GSM_CMP, "GSM response timeout. Re-sending command:%s", gsmCurrCmd);
+     
+      cur_command.ack = true;
+
+      if (RV_SUCCESS != gsmModuleCmdSend(gsmCurrCmd))
+      {
+        LOG_TRACE(GSM_CMP, "Failed to re-send command");
+      }
+    }
 
     /* dispatch next cmd to GSM if response to previous command was received */
     if (cur_command.ack == true)
@@ -695,11 +727,17 @@ static THD_FUNCTION(gsmTask, arg)
 
         cur_command.ack = false;
 
+        /* store current command to be re-send in case of failure */
+        strncpy(gsmCurrCmd, pBuf, sizeof(gsmCurrCmd));
+
         /* return memory block to heap pool */
         if (pBuf)
         {
           chHeapFree((void *) pBuf);
         }
+
+        /* start timer to track GSM response */
+        chVTSet(&vt, S2ST(10), gsmLlTimeoutCb, 0);
       }
     }
 
