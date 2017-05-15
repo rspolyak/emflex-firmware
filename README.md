@@ -43,7 +43,7 @@ To proceed please execute "make"
 ## Commiting new changes
 
 Prior to commit new change, ensure existing functionality is not impacted.
-Run "./build_all_targets" to verify compilation of all targets and profiles.
+Run "./build_targets" to verify compilation of all targets and profiles.
 
 ## Burning
 * Connect your device to USB port
