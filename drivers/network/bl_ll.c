@@ -22,108 +22,51 @@
 ******************************************************************************
  */
 
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
 #include "common.h"
 #include "bl_ll_api.h"
+#include "bl_api.h"
 #include "utils.h"
 #include "bsp.h"
-#include "stepper.h"
 #include "logging.h"
 #include "serial_port.h"
 
 #define MAX_CMD_LEN 128
 
-typedef enum
-{
-  PARSE_DATA_STATE,
-  FINISH_STATE
-} bl_parse_state_t;
-
 static THD_WORKING_AREA(blThread, 1024);
 
-static RV_t bleResponseParse(const char *buf, int32_t len)
-{
-  static bl_parse_state_t state = PARSE_DATA_STATE;
-  static char blCmdBuf[MAX_CMD_LEN];
-  static char *p = blCmdBuf;
-  int resp = 0;
+blCbFunc_t blCallback_g = NULL;
 
-  if (!buf)
+RV_t blRegisterEventCb(blCbFunc_t cb)
+{
+  blCallback_g = cb;
+
+  return RV_SUCCESS;
+}
+
+static RV_t blCallCb(const char *buf, int32_t len)
+{
+  if (blCallback_g == NULL)
+  {
+    LOG_TRACE(BL_CMP,"Callback is not registered");
+    return RV_FAILURE;
+  }
+
+  return blCallback_g(buf, len);
+}
+
+RV_t blModuleSend(const char *val)
+{
+  msg_t resp = Q_OK;
+
+  if (!val)
   {
     return RV_FAILURE;
   }
 
-  switch (state)
+  if ((resp = sdWriteTimeout(&BL_SERIAL_PORT, (uint8_t *) val, strlen(val),
+                             BL_WRITE_TIMEOUT)) < Q_OK)
   {
-    case PARSE_DATA_STATE:
-      while (len > 0)
-      {
-        if (*buf == '\n')
-        {
-          buf++;
-          len--;
-          state = FINISH_STATE;
-          break;
-        }
-        *p++ = *buf++;
-        len--;
-        if (len == 0)
-        {
-          LOG_TRACE(BLT_CMP, "len %u", len);
-          return RV_NOT_COMPLETED;
-        }
-      }
-
-    case FINISH_STATE:
-      *p = '\0';
-      state = PARSE_DATA_STATE;
-
-      if (0 == strncmp(blCmdBuf, "up", sizeof("up")-1))
-      {
-        LOG_TRACE(BLT_CMP, "UP button");
-
-        resp = chMBPost(&stepMsg, STEP_UP, TIME_IMMEDIATE);
-        if (resp < Q_OK)
-        {
-          LOG_TRACE(BLT_CMP, "rv = %i", resp);
-        }
-      }
-      else if (0 == strncmp(blCmdBuf, "down", sizeof("down")-1))
-      {
-        LOG_TRACE(BLT_CMP, "DOWN button");
-
-        resp = chMBPost(&stepMsg, STEP_DOWN, TIME_IMMEDIATE);
-        if (resp < Q_OK)
-        {
-          LOG_TRACE(BLT_CMP, "rv = %i", resp);
-        }
-      }
-      else if (0 == strncmp(blCmdBuf, "open", sizeof("open")-1))
-      {
-        LOG_TRACE(BLT_CMP, "OPEN button");
-
-        resp = chMBPost(&stepMsg, FULLOPEN, TIME_IMMEDIATE);
-        if (resp < Q_OK)
-        {
-          LOG_TRACE(BLT_CMP, "rv = %i", resp);
-        }
-      }
-      else if (0 == strncmp(blCmdBuf, "close", sizeof("close")-1))
-      {
-        LOG_TRACE(BLT_CMP, "CLOSE button");
-
-        resp = chMBPost(&stepMsg, FULLCLOSED, TIME_IMMEDIATE);
-        if (resp < Q_OK)
-        {
-          LOG_TRACE(BLT_CMP, "rv = %i", resp);
-        }
-      }
-
-      p = blCmdBuf;
-      break;
+    LOG_TRACE(GSM_CMP,"Error. rv=%i", resp);
   }
 
   return RV_SUCCESS;
@@ -138,17 +81,15 @@ static THD_FUNCTION(blTask, arg)
 
   while (1)
   {
-    /*Decrease the read speed from UART*/
-    chThdSleepMilliseconds(100);
-
     /* get data from serial port if any. Get up to sizeof(buf) bytes */
     memset(buf, 0, sizeof(buf));
-    blInByteNum = sdAsynchronousRead(&SD1, (uint8_t *) buf, MAX_CMD_LEN - 1);
+    blInByteNum = sdReadTimeout(&BL_SERIAL_PORT, (uint8_t *) buf,
+                                MAX_CMD_LEN - 1, BL_READ_TIMEOUT);
     if ((blInByteNum > 0) && (blInByteNum < MAX_CMD_LEN))
     {
       LOG_TRACE(BLT_CMP, "Bluetooth returned %d bytes:%s", blInByteNum, buf);
 
-      bleResponseParse(buf, blInByteNum);
+      blCallCb(buf, blInByteNum);
     }
   }
 }

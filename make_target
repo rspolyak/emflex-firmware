@@ -1,12 +1,13 @@
-#set default target. select "discovery" to compile code for STM32LDiscovery board
-#or choose "gtrack" to compile for custom one
+#set default target and profile
 
 #export TRG=ST_STM32VL_DISCOVERY
 #export TRG=ST_STM32L_DISCOVERY
+#export TRG=gtrack
+export TRG=stm32f103_mini
 #export TRG=ST_STM32F3_DISCOVERY
-export TRG=gtrack
 
-export PROFILE=tracking
+#export PROFILE=tracking
 #export PROFILE=actuator
 #export PROFILE=gps_tracker
 #export PROFILE=wifi_camera
+export PROFILE=ble_prototype

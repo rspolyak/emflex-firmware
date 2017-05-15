@@ -7,3 +7,7 @@ MCU  = cortex-m3
 CSRC+=$(patsubst %.c, %.o, $(wildcard drivers/sensors/gps_api.c))
 
 CSRC+=$(patsubst %.c, %.o, $(wildcard drivers/network/wifi.c))
+
+CSRC+=$(patsubst %.c, %.o, $(wildcard drivers/network/bl_api.c))
+
+CSRC+=$(patsubst %.c, %.o, $(wildcard drivers/network/bl_ll.c))
