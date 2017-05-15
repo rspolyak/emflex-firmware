@@ -1,0 +1,43 @@
+#!/bin/bash
+
+trg_arr=()
+prf_arr=()
+
+echo ""
+echo "========================================================================"
+echo "Script verifies compilation of targets specified in make_configure file"
+echo "Each target is compiled for all profiles."
+echo "========================================================================"
+echo ""
+
+while read p; do
+  if [[ $p == *"TRG"* ]]; then
+    trg_arr[i]=$p
+    ((i++))
+  elif [[ $p == *"PROFILE"* ]]; then
+    prf_arr[k]=$p
+    ((k++))
+  fi
+done <make_target
+
+for trgSubStr in "${trg_arr[@]}"
+do
+  IFS=' ' read -ra trg <<< "${trgSubStr}"
+  for prfSubStr in "${prf_arr[@]}"
+  do
+    IFS=' ' read -ra prf <<< "${prfSubStr}"
+
+    make clean > /dev/null 2>&1
+
+    make ${trg[1]} ${prf[1]} >> build_log 2> /dev/null
+
+    if [ $? -eq 0 ]; then
+      echo ${trg[1]} ${prf[1]} OK
+    else
+     echo ${trg[1]} ${prf[1]} FAIL
+    fi
+
+    echo ""
+  done
+
+done

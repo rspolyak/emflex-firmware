@@ -40,6 +40,11 @@ actuator | Window opening solution
 
 To proceed please execute "make"
 
+## Commiting new changes
+
+Prior to commit new change, ensure existing functionality is not impacted.
+Run "./build_all_targets" to verify compilation of all targets and profiles.
+
 ## Burning
 * Connect your device to USB port
 * Just type "make load" to upload firmware
