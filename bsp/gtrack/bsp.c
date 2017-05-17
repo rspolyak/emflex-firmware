@@ -225,3 +225,13 @@ RV_t bspNormalActivity()
 
   return RV_SUCCESS;
 }
+
+RV_t bspGsmReset(void)
+{
+  palSetPad(GPIOA, GPIOA_PIN1);
+  for (int i = 0; i < 1000; i++)
+    ;
+  palClearPad(GPIOA, GPIOA_PIN1);
+
+  return RV_SUCCESS;
+}

@@ -32,6 +32,7 @@ extern void bspGsmPowerOnOff(void);
 extern void bspSystemPowerOff(void);
 extern RV_t bspIndicateError(uint32_t blinkTime);
 extern RV_t bspNormalActivity(void);
+extern RV_t bspGsmReset(void);
 
 /**
  * @brief   CLI serial port.
