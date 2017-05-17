@@ -57,7 +57,7 @@ void bspSystemPowerOff(void)
   return;
 }
 
-static void pwrOff(void *arg) {
+static void bspPwrOff(void *arg) {
 
   (void)arg;
 
@@ -88,7 +88,7 @@ static void bspExtcb1(EXTDriver *extp, expchannel_t channel)
 
   chSysLockFromISR();
 
-  chVTSetI(&vt4, S2ST(2), pwrOff, NULL);
+  chVTSetI(&vt4, S2ST(5), bspPwrOff, NULL);
 
   chSysUnlockFromISR();
 
@@ -166,7 +166,7 @@ static const GPTConfig bspGpt4ErrorCfg = {
 };
 
 /* GPT4 initial callback. */
-static void bspGpt4InitalCb(GPTDriver *gptp)
+static void bspGpt4InitialCb(GPTDriver *gptp)
 {
   (void) gptp;
 
@@ -179,7 +179,7 @@ static void bspGpt4InitalCb(GPTDriver *gptp)
 /* GPT4 initial configuration. */
 static const GPTConfig bspGpt4InitialCfg = {
   1000,         /* 1kHz timer clock.*/
-  bspGpt4InitalCb,    /* Timer callback.*/
+  bspGpt4InitialCb,    /* Timer callback.*/
   0,
   0
 };
