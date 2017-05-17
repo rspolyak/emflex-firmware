@@ -22,21 +22,6 @@
 #include "logging.h"
 #include "gsm_common.h"
 #include "gsm_ll_api.h"
-//#include "cli.h"
-
-extern gsmCbFunc_t gsmCbArray_g[GSM_EVENT_LAST];
-extern phoneBook_t phoneBook_g;
-
-RV_t gsmEventModuleReboot(void)
-{
-  LOG_TRACE(GSM_CMP, "Powering down!");
-  if (RV_SUCCESS != gsmModuleSend(GSM_POWER_DOWN))
-  {
-    LOG_TRACE(GSM_CMP,"gsmModuleSend failed");
-  }
-
-  return RV_SUCCESS;
-}
 
 /* Initialize gsm module */
 RV_t gsmInit(void)
@@ -116,13 +101,3 @@ RV_t gsmStateReqSend(void)
 {
   return gsmLlDeviceStateGet();
 }
-
-RV_t gsmATCmdSend(const char *buf, uint32_t len)
-{
-  (void) len;
-
-  gsmCmdSend(buf);
-
-  return RV_SUCCESS;
-}
-

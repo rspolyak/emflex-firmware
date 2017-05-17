@@ -2,6 +2,7 @@
 * File:       gsm_ll_api.h
 *
 * Created on: Apr 04, 2016
+*
 * Author:     rostokus
 ******************************************************************************
 
@@ -28,6 +29,15 @@
 #define EOF_SMS '\x1A'
 #define NULL_SYM '\0'
 
+#define GSM_PHONE_BOOK_SIZE 10
+#define GSM_PHONE_NUMBER_LEN 17
+#define GSM_PHONE_NAME_LEN 40
+
+#define GSM_SIGNAL_LEVEL                "AT+CSQ\r"
+#define GSM_BATTERY_DISCHARGE           "AT+CBC\r"
+#define GSM_BALANCE_CHECK "AT+CUSD=1,\"*111#\"\r"
+#define GSM_POWER_DOWN          "AT+CPOWD=1\r"
+
 typedef struct command_s
 {
   int id;
@@ -35,24 +45,6 @@ typedef struct command_s
 } command_t;
 
 typedef RV_t (*gsmCmdAnalyze_t)(char *buf, uint32_t len, uint32_t *val);
-
-RV_t gsmTaskInit(void);
-RV_t gsmModuleInit(void);
-void gsmModuleCfg(void);
-RV_t gsmSendSmsToNumber(const char *telNum, const char *text);
-RV_t gsmModuleBalanceGet(float *bal);
-void gsmModuleCheckState(void);
-void gsmModuleSpeed(void);
-RV_t gsmCallEventCb(gsmEvent_t event);
-RV_t gsmCmpCommand(const char *inBuf, const char *cmpBuf);
-extern RV_t gsmModuleCmdSend(const char *buf);
-extern RV_t gsmCmdSend(const char *gsm_command);
-extern RV_t gsmModuleSend(const char *val);
-extern RV_t gsmLlDeviceStateGet(void);
-
-#define GSM_PHONE_BOOK_SIZE 10
-#define GSM_PHONE_NUMBER_LEN 17
-#define GSM_PHONE_NAME_LEN 40
 
 typedef struct phoneBookEntry_s
 {
@@ -80,9 +72,18 @@ typedef enum
   GSM_OP_NOT
 } gsm_cmd_resp_t;
 
-#define GSM_SIGNAL_LEVEL                "AT+CSQ\r"
-#define GSM_BATTERY_DISCHARGE           "AT+CBC\r"
-#define GSM_BALANCE_CHECK "AT+CUSD=1,\"*111#\"\r"
-#define GSM_POWER_DOWN          "AT+CPOWD=1\r"
+RV_t gsmTaskInit(void);
+RV_t gsmModuleInit(void);
+void gsmModuleCfg(void);
+RV_t gsmSendSmsToNumber(const char *telNum, const char *text);
+RV_t gsmModuleBalanceGet(float *bal);
+void gsmModuleCheckState(void);
+void gsmModuleSpeed(void);
+RV_t gsmCallEventCb(gsmEvent_t event);
+RV_t gsmCmpCommand(const char *inBuf, const char *cmpBuf);
+extern RV_t gsmCmdSend(const char *gsm_command);
+extern RV_t gsmLlDeviceStateGet(void);
+extern gsmCbFunc_t gsmCbArray_g[GSM_EVENT_LAST];
+extern phoneBook_t phoneBook_g;
 
 #endif

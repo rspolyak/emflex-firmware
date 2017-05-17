@@ -169,7 +169,7 @@ static RV_t gsmFormSmsGetRqst(char *inBuf, char *outBuf)
   return RV_SUCCESS;
 }
 
-RV_t gsmModuleSend(const char *val)
+RV_t gsmLlSdWrite(const char *val)
 {
   msg_t resp = Q_OK;
 
@@ -187,24 +187,22 @@ RV_t gsmModuleSend(const char *val)
   return RV_SUCCESS;
 }
 
-RV_t gsmModuleCmdSend(const char *buf)
+static RV_t gsmLlCmdBufAllocate(const char *buf, char **out)
 {
-  msg_t rdymsg = MSG_OK;
-  char *p = 0;
-  uint32_t len = 0;
+  int32_t len = 0;
 
-  if (buf == 0)
+  if ((!buf) || (!out) || (!(*out)))
   {
     return RV_FAILURE;
   }
 
   len = strnlen(buf, MAX_BUF_LEN) + 1;
 
-  p = (char *) chHeapAlloc(0, len);
+  *out = (char *) chHeapAlloc(0, len);
 
-  if (p)
+  if (*out)
   {
-    strncpy(p, buf, len);
+    strncpy(*out, buf, len);
   }
   else
   {
@@ -212,7 +210,44 @@ RV_t gsmModuleCmdSend(const char *buf)
     return RV_NOT_READY;
   }
 
-  rdymsg = chMBPost(&gsm_tx_mb_s, (msg_t) p, TIME_IMMEDIATE);
+  return RV_SUCCESS;
+}
+
+static RV_t gsmLlCmdSend(const char *buf)
+{
+  RV_t  rv     = RV_FAILURE;
+  msg_t rdymsg = MSG_OK;
+  char  *out   = 0;
+
+  rv = gsmLlCmdBufAllocate(buf, &out);
+  if (RV_SUCCESS != rv)
+  {
+    return rv;
+  }
+
+  rdymsg = chMBPost(&gsm_tx_mb_s, (msg_t) out, TIME_IMMEDIATE);
+  if (rdymsg != MSG_OK)
+  {
+    LOG_TRACE(GSM_CMP,"Failed to queue TX msg, RV=%u", rdymsg);
+    return RV_FAILURE;
+  }
+
+  return RV_SUCCESS;
+}
+
+static RV_t gsmLlCmdSendFirst(const char *buf)
+{
+  RV_t  rv     = RV_FAILURE;
+  msg_t rdymsg = MSG_OK;
+  char  *out   = 0;
+
+  rv = gsmLlCmdBufAllocate(buf, &out);
+  if (RV_SUCCESS != rv)
+  {
+    return rv;
+  }
+
+  rdymsg = chMBPostAhead(&gsm_tx_mb_s, (msg_t) out, TIME_IMMEDIATE);
   if (rdymsg != MSG_OK)
   {
     LOG_TRACE(GSM_CMP,"Failed to queue TX msg, RV=%u", rdymsg);
@@ -270,17 +305,17 @@ void gsmModuleSendGetHttpRequest(uint8_t signal, uint8_t battery)
 
 void gsmModuleCfg(void)
 {
-  gsmModuleCmdSend(GSM_FIXED_BAUDRATE);
-  gsmModuleCmdSend(GSM_ECHO_DISABLE);
-  gsmModuleCmdSend(GSM_TA_RESPONSE_FORMAT_ENABLE);
-  gsmModuleCmdSend(GSM_SMS_TEXT_MESSAGE_FORMAT);
-  gsmModuleCmdSend(GSM_NEW_SMS_MESSAGE_INDICATION);
-  gsmModuleCmdSend(GSM_REPORT_ERROR_CODE_VERBOSE_ENABLE);
-  gsmModuleCmdSend(GSM_LEGACY_SMS_CLEAR);
+  gsmLlCmdSend(GSM_FIXED_BAUDRATE);
+  gsmLlCmdSend(GSM_ECHO_DISABLE);
+  gsmLlCmdSend(GSM_TA_RESPONSE_FORMAT_ENABLE);
+  gsmLlCmdSend(GSM_SMS_TEXT_MESSAGE_FORMAT);
+  gsmLlCmdSend(GSM_NEW_SMS_MESSAGE_INDICATION);
+  gsmLlCmdSend(GSM_REPORT_ERROR_CODE_VERBOSE_ENABLE);
+  gsmLlCmdSend(GSM_LEGACY_SMS_CLEAR);
 
   //gsmCmdSend(GSM_PHONEBOOK_READ_ALL);
 
-  gsmModuleCmdSend(GSM_SLEEP_MODE_DTR);
+  gsmLlCmdSend(GSM_SLEEP_MODE_DTR);
 }
 
 void gsmModulePhoneNumberAdd(char* number, char* name)
@@ -662,12 +697,6 @@ void gsmLlTimeoutCb(void *param)
 {
   (void) param;
 
-  /* Reset GSM module */
-  palSetPad(GPIOA, GPIOA_PIN1);
-  for (int i = 0; i < 1000; i++)
-    ;
-  palClearPad(GPIOA, GPIOA_PIN1);
-
   /* re-send previous command */
   gGsmLastCmdResend = 1;
 }
@@ -684,8 +713,6 @@ static THD_FUNCTION(gsmTask, arg)
   int32_t time = -15;
   char gsmCurrCmd[32] = {0};
 
-  chVTObjectInit(&vt);
-
   while (1)
   {
     /*Decrease the read speed from UART*/
@@ -695,12 +722,15 @@ static THD_FUNCTION(gsmTask, arg)
     {
       LOG_TRACE(GSM_CMP, "GSM response timeout. Re-sending command:%s", gsmCurrCmd);
      
-      cur_command.ack = true;
-
-      if (RV_SUCCESS != gsmModuleCmdSend(gsmCurrCmd))
+      if (RV_SUCCESS != gsmLlCmdSendFirst(gsmCurrCmd))
       {
         LOG_TRACE(GSM_CMP, "Failed to re-send command");
       }
+
+      /* Reset GSM module */
+      bspGsmReset();
+
+      cur_command.ack = true;
     }
 
     /* dispatch next cmd to GSM if response to previous command was received */
@@ -716,7 +746,7 @@ static THD_FUNCTION(gsmTask, arg)
         chThdSleepMilliseconds(100);
 
         LOG_TRACE(GSM_CMP, "Sending a command #%d:%s", cur_command.id, pBuf);
-        rv = gsmModuleSend(pBuf);
+        rv = gsmLlSdWrite(pBuf);
         if (RV_SUCCESS != rv)
         {
           LOG_TRACE(GSM_CMP,"gsmModuleSend failed with %error %u", rv);
@@ -847,7 +877,7 @@ RV_t gsmModuleInit()
 {
   /* Check whether GSM module is already running.
    * Send test command and wait for GSM reply. */
-  if (RV_SUCCESS != gsmModuleCmdSend(GSM_MODULE_MODEL_GET))
+  if (RV_SUCCESS != gsmLlCmdSend(GSM_MODULE_MODEL_GET))
   {
     return RV_FAILURE;
   }
@@ -967,14 +997,14 @@ RV_t gsmCmdSend(const char *gsm_command)
 
   if (gsmReadyGet() == true)
   { 
-    if (RV_SUCCESS == (rv = gsmModuleCmdSend(gsm_command)))
+    if (RV_SUCCESS == (rv = gsmLlCmdSend(gsm_command)))
     {
       return RV_SUCCESS;
     }
     else if (RV_NOT_READY == rv)
     {
       chThdSleepMilliseconds(300);
-      rv = gsmModuleCmdSend(gsm_command);
+      rv = gsmLlCmdSend(gsm_command);
     }
 
     if (RV_FAILURE == rv)
