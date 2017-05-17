@@ -344,12 +344,12 @@ static RV_t gsmModuleAsyncEventHandle(char *str)
   /* message content received*/
   else if (RV_SUCCESS == gsmCmpCommand(str, GSM_MSG_CMT))
   {
-    LOG_TRACE(GSM_CMP, "Rec sms: %s\r\n", str);
+    LOG_TRACE(GSM_CMP, "Rec sms: %s", str);
     gsmTaskCb(str);
   }
   else
   {
-    LOG_TRACE(GSM_CMP, "Rec event:%s\r\n", str);
+    LOG_TRACE(GSM_CMP, "Rec event:%s", str);
   }
 
   return RV_SUCCESS;
@@ -372,35 +372,16 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len)
 
     gsmIsOnSet();
 
+    LOG_TRACE(GSM_CMP, "GSM is ready");
+
     return RV_SUCCESS;
   }
   else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_NETWORK_STATUS_STR))
   {
-#if 0
-    uint32_t resp = strnlen(buf, len);
-    uint32_t data = buf[resp-1] - '0';
-
-    LOG_TRACE(GSM_CMP, "returned %s\r\n", buf);
-
-    if (data == 1)
-    {
-      //gsmReady = true;
-    }
-#endif
     return RV_SUCCESS;
   }
   else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_POWER_DOWN_EVENT))
-  {
-    if (RV_SUCCESS != gsmCallEventCb(GSM_EVENT_DOWN))
-    {
-      LOG_TRACE(GSM_CMP,"Failed to power off GSM");
-      return RV_FAILURE;
-    }
-
-    LOG_TRACE(GSM_CMP, "GSM IS DISABLED");
-#if 0
-    gsmReady = false;
-#endif
+  {    
     return RV_SUCCESS;
   }
   else if (RV_SUCCESS == gsmCmpCommand(buf, GSM_RDY_EVENT))
@@ -477,6 +458,7 @@ static RV_t gsmModuleCmdAnalyze(char *buf, uint32_t len)
         /* allow next command to be dispatched to GSM module */
         cur_command.ack = true;
 
+        /* Clear GSM response timeout timer */
         chVTReset(&vt);
     }
     else if (!strcmp(buf, "ERROR"))
@@ -783,7 +765,6 @@ static THD_FUNCTION(gsmTask, arg)
       if (rv == RV_FAILURE)
       {
         LOG_ERROR(GSM_CMP, "Failed to parse GSM command");
-        break;
       }
     }
 
