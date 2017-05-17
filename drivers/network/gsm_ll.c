@@ -737,7 +737,7 @@ static THD_FUNCTION(gsmTask, arg)
         }
 
         /* start timer to track GSM response */
-        chVTSet(&vt, S2ST(10), gsmLlTimeoutCb, 0);
+        chVTSet(&vt, S2ST(90), gsmLlTimeoutCb, 0);
       }
     }
 
