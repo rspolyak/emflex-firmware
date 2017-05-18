@@ -117,6 +117,7 @@ RV_t gsmCmpCommand(const char *inBuf, const char *cmpBuf)
   }
   else
   {
+    LOG_ERROR(GSM_CMP, "Failed to find GSM commands");
     return RV_FAILURE;
   }
 }
@@ -125,6 +126,7 @@ RV_t gsmStateReqGet(uint32_t *sign, uint32_t *batt, char *bal, uint32_t len)
 {
   if (!sign || !batt || !bal)
   {
+    LOG_ERROR(GSM_CMP, "Null pointer received");
     return RV_FAILURE;
   }
 
@@ -138,6 +140,7 @@ RV_t gsmStateReqGet(uint32_t *sign, uint32_t *batt, char *bal, uint32_t len)
    {
      if (RV_SUCCESS != floatToStr(balance_s.balance, bal, len))
      {
+       LOG_ERROR(GSM_CMP, "Failed to convert balance");
        return RV_FAILURE;
      }
    }
@@ -175,13 +178,15 @@ RV_t gsmLlSdWrite(const char *val)
 
   if (!val)
   {
+    LOG_ERROR(GSM_CMP, "Null pointer received");
     return RV_FAILURE;
   }
 
   if ((resp = sdWriteTimeout(&GSM_SERIAL_PORT, (uint8_t *) val, strlen(val),
                              GSM_WRITE_TIMEOUT)) < Q_OK)
   {
-    LOG_TRACE(GSM_CMP,"Error. rv=%i", resp);
+    LOG_ERROR(GSM_CMP, "Failed to send GSM command to UART buffer. Error %i", resp);
+    return RV_FAILURE;
   }
 
   return RV_SUCCESS;
@@ -189,10 +194,11 @@ RV_t gsmLlSdWrite(const char *val)
 
 static RV_t gsmLlCmdBufAllocate(const char *buf, char **out)
 {
-  int32_t len = 0;
+  uint32_t len = 0;
 
-  if ((!buf) || (!out) || (!(*out)))
+  if ((!buf) || (!out))
   {
+    LOG_ERROR(GSM_CMP, "Null pointer received");
     return RV_FAILURE;
   }
 
@@ -206,7 +212,7 @@ static RV_t gsmLlCmdBufAllocate(const char *buf, char **out)
   }
   else
   {
-    LOG_TRACE(GSM_CMP, "GSM cmd pool is empty");
+    LOG_ERROR(GSM_CMP, "GSM cmd pool is empty");
     return RV_NOT_READY;
   }
 
@@ -222,13 +228,14 @@ static RV_t gsmLlCmdSend(const char *buf)
   rv = gsmLlCmdBufAllocate(buf, &out);
   if (RV_SUCCESS != rv)
   {
+    LOG_ERROR(GSM_CMP, "Failed to allocate GSM command memory");
     return rv;
   }
 
   rdymsg = chMBPost(&gsm_tx_mb_s, (msg_t) out, TIME_IMMEDIATE);
   if (rdymsg != MSG_OK)
   {
-    LOG_TRACE(GSM_CMP,"Failed to queue TX msg, RV=%u", rdymsg);
+    LOG_ERROR(GSM_CMP, "Failed to queue TX msg, RV=%u", rdymsg);
     return RV_FAILURE;
   }
 
@@ -250,7 +257,7 @@ static RV_t gsmLlCmdSendFirst(const char *buf)
   rdymsg = chMBPostAhead(&gsm_tx_mb_s, (msg_t) out, TIME_IMMEDIATE);
   if (rdymsg != MSG_OK)
   {
-    LOG_TRACE(GSM_CMP,"Failed to queue TX msg, RV=%u", rdymsg);
+    LOG_ERROR(GSM_CMP, "Failed to queue TX msg, RV=%u", rdymsg);
     return RV_FAILURE;
   }
 
@@ -731,7 +738,7 @@ static THD_FUNCTION(gsmTask, arg)
         rv = gsmLlSdWrite(pBuf);
         if (RV_SUCCESS != rv)
         {
-          LOG_TRACE(GSM_CMP,"gsmModuleSend failed with %error %u", rv);
+          LOG_ERROR(GSM_CMP, "GSM task failed to send command with %error %u", rv);
         }
 
         /* enter sleep mode */
@@ -791,7 +798,7 @@ RV_t gsmTaskInit(void)
 
   if (serialInit(GSM_SERIAL_SPEED, &GSM_SERIAL_PORT) < 0)
   {
-    LOG_TRACE(GSM_CMP, "Serial is already occupied");
+    LOG_ERROR(GSM_CMP, "Serial is already occupied");
     return RV_FAILURE;
   }
 
@@ -851,6 +858,8 @@ RV_t gsmCallEventCb(gsmEvent_t event)
       return gsmCbArray_g[event]();
   }
 
+  LOG_ERROR(GSM_CMP, "Failed to execute GSM callback");
+
   return RV_FAILURE;
 }
 
@@ -860,6 +869,7 @@ RV_t gsmModuleInit()
    * Send test command and wait for GSM reply. */
   if (RV_SUCCESS != gsmLlCmdSend(GSM_MODULE_MODEL_GET))
   {
+    LOG_ERROR(GSM_CMP, "Failed to send initial GSM command");
     return RV_FAILURE;
   }
 
@@ -877,6 +887,8 @@ RV_t gsmModuleInit()
   }
 
   gsmReadySet();
+\
+  LOG_TRACE(GSM_CMP, "GSM module configured successfully");
 
   return RV_SUCCESS;
 }
@@ -918,7 +930,8 @@ RV_t gsmPhoneNumberFind(const char* number)
     }
   }
 
-  LOG_TRACE(GSM_CMP, "Phone number is not found");
+  LOG_ERROR(GSM_CMP, "Phone number is not found");
+
   return RV_FAILURE;
 }
 
@@ -944,7 +957,7 @@ RV_t gsmTaskCb(const char *in)
 
   if (gsmPhoneNumberFind(senderTelNum) != RV_SUCCESS)
   {
-    LOG_TRACE(GSM_CMP, "Unauthorized user access!");
+    LOG_ERROR(GSM_CMP, "Unauthorized user access!");
     return RV_FAILURE;
   }
 
@@ -967,7 +980,7 @@ RV_t gsmTaskCb(const char *in)
     return gsmCallEventCb(GSM_EVENT_SMS_STATE);
   }
 
-  LOG_TRACE(GSM_CMP, "Unsupported SMS command");
+  LOG_ERROR(GSM_CMP, "Unsupported SMS command");
 
   return RV_FAILURE;
 }
@@ -985,20 +998,24 @@ RV_t gsmCmdSend(const char *gsm_command)
     else if (RV_NOT_READY == rv)
     {
       chThdSleepMilliseconds(300);
+
+      LOG_ERROR(GSM_CMP, "Timeout sending GSM command. Sending again...");
+
       rv = gsmLlCmdSend(gsm_command);
     }
 
     if (RV_FAILURE == rv)
     {
-      LOG_TRACE(GSM_CMP,"Sending %s failed", gsm_command);
+      LOG_ERROR(GSM_CMP, "Failed to send GSM command with error %u", rv);
       return RV_FAILURE;
     }
   }
   else
   {
-    LOG_TRACE(GSM_CMP, "GSM not ready");
+    LOG_ERROR(GSM_CMP, "Failed to send GSM command. GSM is not ready");
     return RV_FAILURE;
   }
+
   return RV_SUCCESS;
 }
 
@@ -1010,6 +1027,8 @@ RV_t gsmLlDeviceStateGet(void)
   {
       return RV_SUCCESS;
   }
+
+  LOG_ERROR(GSM_CMP, "Failed to query GSM state");
 
   return RV_FAILURE;
 }
@@ -1024,6 +1043,7 @@ static RV_t gsmLlStateAnalyze(const char *buf, uint32_t len)
 
   if (buf == 0)
   {
+    LOG_ERROR(GSM_CMP, "Null parameter was passed to %s", __FUNCTION__);
     return RV_FAILURE;
   }
 
@@ -1060,7 +1080,7 @@ static RV_t gsmLlStateAnalyze(const char *buf, uint32_t len)
       }
       else
       {
-          LOG_TRACE(GSM_CMP,"GSM returned unexpected balance type - %u", ret_type);
+          LOG_ERROR(GSM_CMP, "GSM returned unexpected balance type - %u", ret_type);
       }
 
       LOG_TRACE(GSM_CMP, "Balance = %f", balance_s.balance);
@@ -1097,7 +1117,7 @@ static RV_t gsmLlStateAnalyze(const char *buf, uint32_t len)
         {
           if (RV_SUCCESS != gsmCallEventCb(GSM_EVENT_POWER_LOW))
           {
-            LOG_TRACE(GSM_CMP,"Failed to send under-voltage event");
+            LOG_ERROR(GSM_CMP, "Failed to send under-voltage event");
             return RV_FAILURE;
           }
 

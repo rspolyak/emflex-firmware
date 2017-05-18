@@ -29,14 +29,18 @@ RV_t gsmInit(void)
   /* create task, msg queue, etc. */
   if (RV_SUCCESS != gsmTaskInit())
   {
+    LOG_ERROR(GSM_CMP, "Failed to create GSM task");
     return RV_FAILURE;
   }
 
   /* initialize GSM module */
   if (RV_SUCCESS != gsmModuleInit())
   {
+    LOG_ERROR(GSM_CMP, "Failed to initialize GSM module");
     return RV_FAILURE;
   }
+
+  LOG_TRACE(GSM_CMP, "GSM driver initialized successfully");
 
   return RV_SUCCESS;
 }
