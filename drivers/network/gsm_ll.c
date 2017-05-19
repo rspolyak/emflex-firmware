@@ -709,11 +709,11 @@ static THD_FUNCTION(gsmTask, arg)
 
     if (gGsmLastCmdResend)
     {
-      LOG_TRACE(GSM_CMP, "GSM response timeout. Re-sending command:%s", gsmCurrCmd);
+      LOG_ERROR(GSM_CMP, "GSM response timeout. Re-sending command:%s", gsmCurrCmd);
      
       if (RV_SUCCESS != gsmLlCmdSendFirst(gsmCurrCmd))
       {
-        LOG_TRACE(GSM_CMP, "Failed to re-send command");
+        LOG_ERROR(GSM_CMP, "Failed to re-send command");
       }
 
       /* Reset GSM module */
