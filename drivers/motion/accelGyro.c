@@ -212,7 +212,7 @@ static RV_t accelGet(rawImu_t *dof)
   uint8_t ACCEL_ZOUT_H = 0;
   uint8_t ACCEL_ZOUT_L = 0;
   uint8_t err = 0;
-  uint8_t line = 0;
+  uint32_t line = 0;
 
   do
   {
