@@ -28,20 +28,24 @@ static cliEntry_t cliCmdsList[CLI_CMD_MAX_NUMBER];
 
 static THD_WORKING_AREA(cliThread, CLI_THREAD_STACK_SIZE);
 
+extern mutex_t gSDMutex;
+
 static RV_t cliEchoReturn(char *buf, uint32_t len)
 {
   uint32_t i = 0;
 
   for (i = 0; i < len; i++)
   {
+    chMtxLock(&gSDMutex);
     if (buf[i] != '\r')
-    {
+    {      
       sdPut(&CLI_SERIAL_PORT, buf[i]);
     }
     else
     {
-      sdAsynchronousWrite(&CLI_SERIAL_PORT, (uint8_t *) "\r\n", sizeof("\r\n")-1);
+      sdAsynchronousWrite(&CLI_SERIAL_PORT, (uint8_t *) "\r\n", sizeof("\r\n")-1);      
     }
+    chMtxUnlock(&gSDMutex);
   }
   return RV_SUCCESS;
 }
@@ -129,13 +133,17 @@ static THD_FUNCTION(cliTask, arg)
   uint32_t cliInByteNum = 0;
 
   /* display user prompt */
+  chMtxLock(&gSDMutex);
   sdPut(&CLI_SERIAL_PORT, '>');
+  chMtxUnlock(&gSDMutex);
 
   while (1)
   {
     chThdSleepMilliseconds(300);
 
+    chMtxLock(&gSDMutex);
     cliInByteNum = sdAsynchronousRead(&CLI_SERIAL_PORT, (uint8_t *) buf, sizeof(buf));
+    chMtxUnlock(&gSDMutex);
 
     if (cliInByteNum)
     {
@@ -144,7 +152,9 @@ static THD_FUNCTION(cliTask, arg)
       cliEchoReturn(buf, cliInByteNum);
       if (RV_SUCCESS == cliCmdParse(buf, cliInByteNum))
       {
+        chMtxLock(&gSDMutex);
         sdPut(&CLI_SERIAL_PORT, '>');
+        chMtxUnlock(&gSDMutex);
       }
     }
 

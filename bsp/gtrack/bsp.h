@@ -30,6 +30,10 @@ extern RV_t bspInit(void);
 extern RV_t bspInitComplete(void);
 extern void bspGsmPowerOnOff(void);
 extern void bspSystemPowerOff(void);
+extern RV_t bspIndicateError(uint32_t blinkTime);
+extern RV_t bspNormalActivity(void);
+extern RV_t bspGsmReset(void);
+extern RV_t bspPwrOffCb(void);
 
 /**
  * @brief   CLI serial port.
@@ -57,6 +61,10 @@ extern void bspSystemPowerOff(void);
 #define BSP_SYS_PWR_PIN  GPIOA_PIN7
 
 #define BSP_GSM_PWR_PIN  GPIOC_PIN2
+
+#define BSP_PWR_OF_BUT   GPIOB_PIN12
+
+#define BSP_PWR_OFF_CHANNEL GPIOB_PIN12
 
 #endif /* BSP */
 

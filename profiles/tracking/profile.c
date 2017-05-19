@@ -28,14 +28,10 @@
 #include "gsm_api.h"
 #include "control_api.h"
 #include "cli.h"
-
-#ifdef HAL_USE_DATA_EEPROM
-#include "data_eeprom.h"
-#endif /* HAL_USE_DATA_EEPROM */
-
 #include "accelGyro.h"
 #include "utils.h"
 #include "logging.h"
+#include "ext_api.h"
 
 const uint8_t gImuThresholdInDegrees = 1.0;
 
@@ -71,6 +67,7 @@ static RV_t underVoltageProcess(void);
 
 RV_t doStateIdle(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
 {
+  static bool ctrlWaitForBalance = false;
   dof_t dof;
 
   switch (ev)
@@ -112,13 +109,19 @@ RV_t doStateIdle(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
       }
 
       /* wait for balance event */
+      ctrlWaitForBalance = true;
 
       break;
 
     case BALANCE_EVENT:
-      if (RV_SUCCESS != ctrlGsmStateSend())
+      if (ctrlWaitForBalance == true)
       {
-        LOG_TRACE(CONTROL_CMP, "Could not get gTrack state");
+        if (RV_SUCCESS != ctrlGsmStateSend())
+        {
+         LOG_TRACE(CONTROL_CMP, "Could not retrieve device state");
+        }
+
+        ctrlWaitForBalance = false;
       }
       break;
 
@@ -139,6 +142,8 @@ RV_t doStateIdle(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
 
 RV_t doStateActive(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
 {
+  static bool ctrlWaitForBalance = false;
+
   switch (ev)
   {
     case START_EVENT:
@@ -182,13 +187,19 @@ RV_t doStateActive(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
       }
 
       /* wait for balance event */
+      ctrlWaitForBalance = true;
 
       break;
 
     case BALANCE_EVENT:
-      if (RV_SUCCESS != ctrlGsmStateSend())
+      if (ctrlWaitForBalance == true)
       {
-        LOG_TRACE(CONTROL_CMP,"Could not get gTrack state");
+        if (RV_SUCCESS != ctrlGsmStateSend())
+        {
+         LOG_TRACE(CONTROL_CMP,"Could not get gTrack state");
+        }
+
+        ctrlWaitForBalance = false;
       }
       break;
 
@@ -209,6 +220,8 @@ RV_t doStateActive(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
 
 RV_t doStateAlarm(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
 {
+  static bool ctrlWaitForBalance = false;
+
   switch (ev)
   {
     case START_EVENT:
@@ -250,13 +263,19 @@ RV_t doStateAlarm(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
       }
 
       /* wait for balance event */
+      ctrlWaitForBalance = true;
 
       break;
 
     case BALANCE_EVENT:
-      if (RV_SUCCESS != ctrlGsmStateSend())
+      if (ctrlWaitForBalance == true)
       {
-        LOG_TRACE(CONTROL_CMP,"Could not get gTrack state");
+        if (RV_SUCCESS != ctrlGsmStateSend())
+        {
+         LOG_TRACE(CONTROL_CMP,"Could not get gTrack state");
+        }
+
+        ctrlWaitForBalance = false;
       }
       break;
 
@@ -285,6 +304,7 @@ RV_t doStateTest(ctrl_sm_event_t ev, ctrl_sm_state_t* state)
   return RV_SUCCESS;
 }
 
+/* make MT safe */
 uint32_t logTimeStampGet(void)
 {
   RTCDateTime timp;
@@ -299,52 +319,6 @@ uint32_t logTimeStampGet(void)
 
   return (timp.millisecond - timestamp_g) / 60000;
 }
-
-#if EEPROM_SUPPORT
-RV_t cliEventLogsOn(void)
-{
-  //logMutexLock();
-
-  //logStdOut = true;
-  //memset(debug_flags_g, 0xff, sizeof(debug_flags_g));
-
-  //logMutexUnlock();
-
-  return RV_SUCCESS;
-}
-
-RV_t cliEventLogsOff(void)
-{
-  //logMutexLock();
-
-  //logStdOut = false;
-  //memset(debug_flags_g, 0x00, sizeof(debug_flags_g));
-
-  //logMutexUnlock();
-
-  return RV_SUCCESS;
-}
-
-RV_t cliEventShowEeprom(void)
-{
-
-#ifdef HAL_USE_DATA_EEPROM
-  uint8_t val = 0;
-  uint32_t i = 1;
-
-  LOG_TRACE(CLI_CMP, "======START LOG=====");
-  while(i < EEPROM_SIZE)
-  {
-    DATAEEPROM_ReadByte(EEPROM_START+i, &val);
-    //LOG_INLINE("%c", val);
-    i++;
-  }
-  LOG_TRACE(CLI_CMP, "======END LOG=====");
-#endif /* HAL_USE_DATA_EEPROM */
-
-  return RV_SUCCESS;
-}
-#endif
 
 static RV_t ctrlGsmEventUpProcess(void)
 {
@@ -416,8 +390,8 @@ static RV_t ctrlGsmStateSend()
       return RV_FAILURE;
     }
 
-    gsmModuleConnectGprs();
-    gsmModuleSendGetHttpRequest(signal, battery);
+    //gsmModuleConnectGprs();
+    //gsmModuleSendGetHttpRequest(signal, battery);
   }
   else
   {
@@ -429,26 +403,13 @@ static RV_t ctrlGsmStateSend()
 
 static RV_t underVoltageProcess(void)
 {
-  LOG_TRACE(CONTROL_CMP, "Low battery voltage! Powering off...");
+  LOG_TRACE(CONTROL_CMP, "Low battery voltage!");
 
-  if (RV_SUCCESS != gsmSmsSend("Low battery voltage! Powering off...\r\n"))
+  if (RV_SUCCESS != gsmSmsSend("Low battery voltage!"))
   {
     LOG_TRACE(CONTROL_CMP,"Low voltage msg send failed!");
     return RV_FAILURE;
   }
-
-  chThdSleepSeconds(20);
-
-  /* switch off GSM module */
-  bspGsmPowerOnOff();
-
-  /* before switching device off some delay is required until
-   * user receives power down notification via SMS.
-   * Such delay is implicitly added by gsmPowerOnOff() routine,
-   * so no need to add another one */
-
-  /* switch off device */
-  bspSystemPowerOff();
 
   return RV_SUCCESS;
 }
@@ -461,11 +422,6 @@ void profileInit(void)
   ctrlStateAdd(ALARM_STATE, doStateAlarm, "ALARM");
   ctrlStateAdd(TEST_STATE, doStateTest, "TEST");
 
-#if EEPROM_SUPPORT 
-  cliCmdRegister("log_console",  cliEventLogsOn);
-  cliCmdRegister("log_eeprom", cliEventLogsOff);
-  cliCmdRegister("show_eeprom", cliEventShowEeprom);
-#endif
   cliCmdRegister("start", ctrlGsmEventSmsStartProcess);
   cliCmdRegister("stop", ctrlGsmEventSmsStopProcess);
   cliCmdRegister("state", ctrlGsmEventSmsStateProcess);
@@ -481,8 +437,11 @@ void profileInit(void)
 
   imuRegisterEventCb(IMU_EVENT_ALARM, ctrlImuEventAlarmProcess);
 
+  extAppCbRegister(BSP_PWR_OFF_CHANNEL, EXT_CH_MODE_RISING_EDGE | EXT_MODE_GPIOB, bspPwrOffCb);
+
   cnfgrRegister("Control",      ctrlAppInit);
   cnfgrRegister("GSM",          gsmInit);  
   cnfgrRegister("IMU",          accelGyroInit);
+  cnfgrRegister("Ext",          extAppInit);
   cnfgrRegister("BSP_INIT_FIN", bspInitComplete);
 }

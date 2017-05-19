@@ -23,8 +23,7 @@
 
 #include "common.h"
 #include "bsp.h"
-
-#define BSP_PWR_OFF_CHANNEL GPIOB_PIN12
+#include "logging.h"
 
 void bspGsmPowerOnOff(void)
 {
@@ -57,61 +56,44 @@ void bspSystemPowerOff(void)
   return;
 }
 
-static void bspExtcb1(EXTDriver *extp, expchannel_t channel)
-{
-  (void)extp;
-  (void)channel;
+static void bspPwrOff(void *arg) {
 
-  /* switch off GSM module */
-  /* pull down PWRKEY pin in GSM module */
-  palSetPad(GPIOC, BSP_GSM_PWR_PIN);
+  (void)arg;
 
-  /* wait at least 1 sec */
-  for (uint32_t i = 0; i < 0xFFFFFF; i++)
-      ;
+  if (palReadPad(GPIOB, BSP_PWR_OF_BUT))
+  {
+      LOG_TRACE(BSP, "Powering off the device");
 
-  /* release PWRKEY (automatically raises HIGH) */
-  palClearPad(GPIOC, BSP_GSM_PWR_PIN);
+      /* switch off GSM module */
+      /* pull down PWRKEY pin in GSM module */
+      palSetPad(GPIOC, BSP_GSM_PWR_PIN);
 
-  /* switch off device */
-  bspSystemPowerOff();
+      /* wait at least 1 sec */
+      for (uint32_t i = 0; i < 0x8FFFFF; i++)
+        ;
 
-  return;
+      /* release PWRKEY (automatically raises HIGH) */
+      palClearPad(GPIOC, BSP_GSM_PWR_PIN);
+
+      /* switch off device */
+      bspSystemPowerOff();
+  }
 }
 
-/* External interrupt/event controller (EXTI) config.
-   Each line corresponds to separate channel of EXTI */
-static const EXTConfig bspPwrCfg = {
-  {
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_RISING_EDGE | EXT_MODE_GPIOB, bspExtcb1}, /* power on/off button is connected here */
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL},
-    {EXT_CH_MODE_DISABLED, NULL}
-  }
-};
+RV_t bspPwrOffCb(void)
+{
+  virtual_timer_t vt4;
+
+  LOG_TRACE(BSP, "Received power off request");
+
+  chVTSet(&vt4, S2ST(5), bspPwrOff, NULL);
+
+  return RV_SUCCESS;
+}
 
 RV_t bspInit(void)
 {
-  /* Device initialization has started */
+  /* Indicate that device initialization has started */
   palSetPad(GPIOC, 6);
 
   /* Activates the UART driver for debugging,
@@ -124,43 +106,92 @@ RV_t bspInit(void)
   palSetPadMode(GPIOA, 2, PAL_MODE_ALTERNATE(7));
   palSetPadMode(GPIOA, 3, PAL_MODE_ALTERNATE(7));
 
-  /* start EXTI driver that handles power off event */
-  extStart(&EXTD1, &bspPwrCfg);
-
   /* set IO pin responsible for switching DC-DC converter */
   bspSystemPowerOn();
 
   return RV_SUCCESS;
 }
 
-/* GPT4 callback. */
-static void bspGpt4cb(GPTDriver *gptp)
+/* GPT4 error callback. */
+static void bspGpt4ErrorCb(GPTDriver *gptp)
 {
   (void) gptp;
 
   palTogglePad(GPIOC, 6);
 }
 
-/* GPT4 configuration. */
-static const GPTConfig bspGpt4cfg = {
-  1000,    /* 1kHz timer clock.*/
-  bspGpt4cb,    /* Timer callback.*/
+/* GPT4 error configuration. */
+static const GPTConfig bspGpt4ErrorCfg = {
+  1000,         /* 1kHz timer clock.*/
+  bspGpt4ErrorCb,    /* Timer callback.*/
   0,
   0
 };
 
+/* GPT4 initial callback. */
+static void bspGpt4InitialCb(GPTDriver *gptp)
+{
+  (void) gptp;
+
+  palSetPad(GPIOC, 6);
+  for (uint32_t i = 0; i < 100; i++)
+      ;
+  palClearPad(GPIOC, 6);
+}
+
+/* GPT4 initial configuration. */
+static const GPTConfig bspGpt4InitialCfg = {
+  1000,         /* 1kHz timer clock.*/
+  bspGpt4InitialCb,    /* Timer callback.*/
+  0,
+  0
+};
+
+static RV_t bspStartTimer3Sec(void)
+{
+  gptStart(&GPTD4, &bspGpt4InitialCfg);
+  gptStartContinuous(&GPTD4, 3000);
+
+  return RV_SUCCESS;
+}
+
 RV_t bspInitComplete(void)
 {
-    /* Device initialization completed successfully */
+    /* Indicate that device initialization completed successfully */
     palClearPad(GPIOC, 6);
 
-    /* enable processing power on/off button event */
-    extChannelEnable(&EXTD1, BSP_PWR_OFF_CHANNEL);
-
     /* Display normal device activity.
-     * Blink status LED each 3 sec */
-    gptStart(&GPTD4, &bspGpt4cfg);
-    gptStartContinuous(&GPTD4, 3000); /* 3000 / 1000 = trigger rate in seconds */
+     * Blink status LED each 10 sec */
+    bspStartTimer3Sec();
 
     return RV_SUCCESS;
+}
+
+RV_t bspIndicateError(uint32_t blinkTime)
+{
+  gptStopTimer(&GPTD4);
+
+  gptStart(&GPTD4, &bspGpt4ErrorCfg);
+  gptStartContinuous(&GPTD4, blinkTime);
+
+  return RV_SUCCESS;
+}
+
+RV_t bspNormalActivity()
+{
+  gptStopTimer(&GPTD4);
+
+  bspStartTimer3Sec();
+
+  return RV_SUCCESS;
+}
+
+RV_t bspGsmReset(void)
+{
+  palSetPad(GPIOA, GPIOA_PIN1);
+  for (int i = 0; i < 1000; i++)
+    ;
+  palClearPad(GPIOA, GPIOA_PIN1);
+
+  return RV_SUCCESS;
 }

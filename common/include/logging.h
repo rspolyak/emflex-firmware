@@ -31,14 +31,16 @@ void logEvent(const char *msg, ...);
 #define DEBUG
 
 #ifdef DEBUG
-#define LOG_TRACE(cmp, msg, ...)                                           \
-   logEvent("DEBUG: %s(%u): " msg "\r\n", __FUNCTION__, __LINE__, ##__VA_ARGS__);
+#define LOG_TRACE(cmp, msg, ...)                                   \
+   logEvent("<%umin> DEBUG: %s(%u): " msg "\r\n", logTimeStampGet(),  \
+            __FUNCTION__, __LINE__, ##__VA_ARGS__);
 #else
 #define LOG_TRACE(cmp, msg, ...)
 #endif
 
-#define LOG_ERROR(cmp, msg, ...)                                           \
-   logEvent("ERROR: %s(%u): " msg "\r\n", __FUNCTION__, __LINE__, ##__VA_ARGS__);
+#define LOG_ERROR(cmp, msg, ...)                                    \
+   logEvent("<%umin> ERROR: %s(%u): " msg "\r\n", logTimeStampGet(),   \
+            __FUNCTION__, __LINE__, ##__VA_ARGS__);
 
 #endif
 

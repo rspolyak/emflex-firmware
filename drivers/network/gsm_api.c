@@ -22,21 +22,6 @@
 #include "logging.h"
 #include "gsm_common.h"
 #include "gsm_ll_api.h"
-//#include "cli.h"
-
-extern gsmCbFunc_t gsmCbArray_g[GSM_EVENT_LAST];
-extern phoneBook_t phoneBook_g;
-
-RV_t gsmEventModuleReboot(void)
-{
-  LOG_TRACE(GSM_CMP, "Powering down!\r\n");
-  if (RV_SUCCESS != gsmModuleSend(GSM_POWER_DOWN))
-  {
-    LOG_TRACE(GSM_CMP,"gsmModuleSend failed\r\n");
-  }
-
-  return RV_SUCCESS;
-}
 
 /* Initialize gsm module */
 RV_t gsmInit(void)
@@ -44,14 +29,18 @@ RV_t gsmInit(void)
   /* create task, msg queue, etc. */
   if (RV_SUCCESS != gsmTaskInit())
   {
+    LOG_ERROR(GSM_CMP, "Failed to create GSM task");
     return RV_FAILURE;
   }
 
   /* initialize GSM module */
   if (RV_SUCCESS != gsmModuleInit())
   {
+    LOG_ERROR(GSM_CMP, "Failed to initialize GSM module");
     return RV_FAILURE;
   }
+
+  LOG_TRACE(GSM_CMP, "GSM driver initialized successfully");
 
   return RV_SUCCESS;
 }
@@ -66,7 +55,7 @@ RV_t gsmSmsSend(const char* smsStr)
 
   if (phoneBook_g.resp_is_set == FALSE)
   {
-    LOG_TRACE(GSM_CMP,"No number to respond to\r\n");
+    LOG_TRACE(GSM_CMP,"No number to respond to");
     return RV_FAILURE;
   }
 
@@ -114,24 +103,5 @@ RV_t gsmVoiceCallHandle(void)
 
 RV_t gsmStateReqSend(void)
 {
-  if (RV_SUCCESS == gsmCmdSend(GSM_SIGNAL_LEVEL) &&
-      RV_SUCCESS == gsmCmdSend(GSM_BATTERY_DISCHARGE) &&
-      RV_SUCCESS == gsmCmdSend(GSM_BALANCE_CHECK))
-  {
-    return RV_SUCCESS;
-  }
-  else
-  {
-    return RV_FAILURE;
-  }
+  return gsmLlDeviceStateGet();
 }
-
-RV_t gsmATCmdSend(const char *buf, uint32_t len)
-{
-  (void) len;
-
-  gsmCmdSend(buf);
-
-  return RV_SUCCESS;
-}
-

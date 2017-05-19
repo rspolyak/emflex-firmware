@@ -34,6 +34,8 @@ mailbox_t logMsg;
 static msg_t logMsgQueue[LOG_MSG_QUEUE_SIZE];
 static THD_WORKING_AREA(logAppThread, LOGGING_THREAD_STACK_SIZE);
 
+MUTEX_DECL(gSDMutex);
+
 static THD_FUNCTION(logAppTask, arg)
 {
   (void) arg;
@@ -45,7 +47,9 @@ static THD_FUNCTION(logAppTask, arg)
     /* wait for event */
     if ((resp = chMBFetch(&logMsg, &data, TIME_INFINITE)) >= Q_OK)
     {
+      chMtxLock(&gSDMutex);
       chprintf(((BaseSequentialStream *) &CLI_SERIAL_PORT), (char *) data);
+      chMtxUnlock(&gSDMutex);
       if (data != 0)
       {
         chHeapFree((void *) data);
@@ -78,7 +82,11 @@ void logEvent(const char *msg, ...)
   pBuf = (char *) chHeapAlloc(0, bytesWritten);
   if (pBuf == NULL)
   {
-    chprintf((BaseSequentialStream *) &CLI_SERIAL_PORT, "Failed to allocate from heap!\r\n");
+    chMtxLock(&gSDMutex);
+    chprintf((BaseSequentialStream *) &CLI_SERIAL_PORT, "Error: %s (%u): Failed to allocate from heap!\r\n",
+             __FUNCTION__, __LINE__);
+    chMtxUnlock(&gSDMutex);
+
     return;
   }
 
